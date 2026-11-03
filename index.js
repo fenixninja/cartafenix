@@ -17,13 +17,18 @@
     soundEnabled: true
   };
 
-  // Vídeos gastronómicos para el carrusel de fondo
+  // Vídeos gastronómicos para el carrusel de fondo (sin audio y en bucle continuo)
   const BG_VIDEOS = [
     'src/video/chef_cooking.mp4',
     'src/video/waiter_taking_order.mp4',
     'src/video/patrons_dining_terrace.mp4',
     'src/video/couple_dining.mp4',
-    'src/video/chefs_kitchen.mp4'
+    'src/video/chefs_kitchen.mp4',
+    'src/video/waiter_arranging_plates.mp4',
+    'src/video/people_cafe_terrace.mp4',
+    'src/video/people_coffee_shop.mp4',
+    'src/video/barista_coffee.mp4',
+    'src/video/woman_smartphone.mp4'
   ];
   let currentVideoIdx = 0;
 
@@ -70,22 +75,44 @@
   }
 
   // ========================================================
-  // 2. FONDO DE VÍDEO EN BUCLE Y TRANSICIÓN
+  // 2. FONDO DE VÍDEO EN BUCLE SECUENCIAL (SIN AUDIO)
   // ========================================================
   function initVideoBackground() {
     const videoPlayer = document.getElementById('bg-video-player');
     if (!videoPlayer) return;
 
-    videoPlayer.addEventListener('ended', () => {
+    // Garantizar que sea mudo por código (estrictamente sin audio)
+    videoPlayer.muted = true;
+    videoPlayer.defaultMuted = true;
+    videoPlayer.volume = 0;
+    videoPlayer.playsInline = true;
+    videoPlayer.removeAttribute('loop');
+    videoPlayer.loop = false;
+
+    function playNextVideo() {
       currentVideoIdx = (currentVideoIdx + 1) % BG_VIDEOS.length;
       videoPlayer.style.opacity = '0';
       setTimeout(() => {
         videoPlayer.src = BG_VIDEOS[currentVideoIdx];
-        videoPlayer.play().catch(() => {});
+        videoPlayer.muted = true;
+        videoPlayer.volume = 0;
+        videoPlayer.load();
+        videoPlayer.play().catch((e) => {
+          console.log('[Video] Autoplay espera interacción o carga:', e);
+        });
         videoPlayer.style.opacity = '1';
-      }, 600);
+      }, 400);
+    }
+
+    videoPlayer.addEventListener('ended', playNextVideo);
+    videoPlayer.addEventListener('error', (e) => {
+      console.warn('[Video] Error cargando vídeo, saltando al siguiente:', e);
+      playNextVideo();
     });
 
+    window.nextBackgroundVideo = playNextVideo;
+
+    // Iniciar primer vídeo
     videoPlayer.play().catch((err) => {
       console.warn('[Video] Autoplay mitigado por política del navegador:', err);
     });
