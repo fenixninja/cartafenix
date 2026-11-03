@@ -9,7 +9,7 @@
 
   const CARTA_CONFIG = {
     wsUrl: 'https://api.whatauth.com',
-    domain: 'carta.fenix.ninja'
+    domain: (typeof window !== 'undefined' && window.location.hostname) ? window.location.hostname : 'carta.whatauth.com'
   };
 
   // Parámetros de URL

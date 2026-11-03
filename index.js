@@ -10,7 +10,7 @@
   // Configuración del Restaurante
   const RESTAURANT_CONFIG = {
     wsUrl: 'https://api.whatauth.com',
-    domain: 'carta.fenix.ninja',
+    domain: (typeof window !== 'undefined' && window.location.hostname) ? window.location.hostname : 'carta.whatauth.com',
     phone: '34631490990',
     logoUrl: 'src/img/logo.png',
     currentTable: 'Mesa 04',
