@@ -286,13 +286,13 @@
 
     try {
       activeQrStyling = new QRCodeStyling({
-        width: 220,
-        height: 220,
+        width: 240,
+        height: 240,
         type: 'svg',
         data: walink,
         image: RESTAURANT_CONFIG.logoUrl,
-        margin: 2,
-        qrOptions: { mode: 'Byte', errorCorrectionLevel: 'Q' },
+        margin: 0,
+        qrOptions: { mode: 'Byte', errorCorrectionLevel: 'M' },
         dotsOptions: {
           color: '#121624',
           type: 'rounded'
@@ -300,8 +300,8 @@
         backgroundOptions: { color: '#ffffff' },
         imageOptions: {
           crossOrigin: 'anonymous',
-          margin: 4,
-          imageSize: 0.26
+          margin: 3,
+          imageSize: 0.24
         },
         cornersSquareOptions: {
           color: '#9B51E0',
@@ -314,6 +314,34 @@
       });
 
       activeQrStyling.append(target);
+
+      // Auto-ajuste estricto del viewBox para eliminar todo el margen blanco sobrante
+      const fitSvgViewBox = () => {
+        const svg = target.querySelector('svg');
+        if (!svg) return;
+        try {
+          const qr = activeQrStyling._qr;
+          const opts = activeQrStyling._options;
+          if (qr && opts) {
+            const count = qr.getModuleCount();
+            const margin = opts.margin || 0;
+            const avail = Math.min(opts.width, opts.height) - 2 * margin;
+            const dotSize = Math.floor(avail / count);
+            const qrSize = count * dotSize;
+            const offsetX = Math.floor((opts.width - qrSize) / 2);
+            const offsetY = Math.floor((opts.height - qrSize) / 2);
+            const pad = 2; // Margen mínimo limpio y seguro
+            svg.setAttribute('viewBox', `${offsetX - pad} ${offsetY - pad} ${qrSize + 2 * pad} ${qrSize + 2 * pad}`);
+          }
+        } catch (err) {
+          console.warn('[QR] Error recortando viewBox:', err);
+        }
+      };
+
+      fitSvgViewBox();
+      if (activeQrStyling._svgDrawingPromise && typeof activeQrStyling._svgDrawingPromise.then === 'function') {
+        activeQrStyling._svgDrawingPromise.then(fitSvgViewBox);
+      }
     } catch (e) {
       console.warn('[QR] Error renderizando QR Styling:', e);
     }
@@ -489,3 +517,4 @@
     }
   };
 })();
+

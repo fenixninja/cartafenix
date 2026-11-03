@@ -386,7 +386,7 @@ body {
   height: 240px;
   background: #ffffff;
   border-radius: 18px;
-  padding: 10px;
+  padding: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1128,3 +1128,4 @@ body {
 .hidden {
   display: none !important;
 }
+
