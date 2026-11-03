@@ -590,9 +590,11 @@
       playTapSound(800, 'triangle', 0.35);
 
       const submittedRound = currentRound;
+      const orderId = 'ord_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
 
-      // Payload oficial de comanda
+      // Payload oficial de comanda con identificador único anti-duplicados
       const orderPayload = {
+        orderId,
         table: currentTable,
         sessionId: currentSessionId,
         dinerName: currentDinerName || '',

@@ -163,6 +163,10 @@
   const tableDrafts = {};
   let draftTimeoutKds = null;
   let draftTimeoutPda = null;
+  let lastItemChimeTs = 0;
+
+  // Registro de deduplicación de comandas procesadas (anti-rebote WS + BroadcastChannel)
+  const processedOrderIds = new Set();
 
   // Lista de vídeos para el carrusel de fondo
   const bgVideos = [
@@ -712,10 +716,12 @@
         renderTableOrders(table);
       }, 5 * 60 * 1000);
 
-      // Sonido sutil de entrada de ítem
-      playChime(784, 'sine', 0.12);
-      // Sonido nítido de campana de cocina al seleccionar productos
-      playChime(784.0, 'triangle', 0.25, 0.28);
+      // Sonido nítido de campana de cocina al seleccionar productos (con debounce anti-eco)
+      const nowChime = Date.now();
+      if (nowChime - lastItemChimeTs > 150) {
+        lastItemChimeTs = nowChime;
+        playChime(784.0, 'triangle', 0.25, 0.28);
+      }
 
       // Renderizar para actualizar la tarjeta fantasma en KDS y PDA
       renderTableOrders(table);
@@ -728,18 +734,38 @@
       if (!orderData) return;
       const table = normalizeTableName(orderData.table || RESTAURANT_CONFIG.currentTable);
 
-      // 1. Limpiar borrador y cancelar el temporizador de 5 minutos al confirmarse la comanda
-      if (tableDrafts[table]) {
-        if (tableDrafts[table].timeoutId) clearTimeout(tableDrafts[table].timeoutId);
-        delete tableDrafts[table];
-      }
-
       if (!liveTableTickets[table]) {
         liveTableTickets[table] = [];
       }
 
       const ticketsList = liveTableTickets[table];
       const roundNumber = orderData.round || (ticketsList.length + 1);
+
+      // Deduplicación 1: Por orderId único emitido desde la carta móvil
+      if (orderData.orderId) {
+        if (processedOrderIds.has(orderData.orderId)) {
+          console.log(`[Orders] 🛑 Descartando orden duplicada (orderId: ${orderData.orderId})`);
+          return;
+        }
+        processedOrderIds.add(orderData.orderId);
+      }
+
+      // Deduplicación 2: Ventana temporal anti-rebote (3.5 segundos) para misma mesa y misma ronda
+      const now = Date.now();
+      const isDuplicateRecent = ticketsList.some(
+        (t) => t.round === roundNumber && (now - t.createdAt < 3500)
+      );
+      if (isDuplicateRecent) {
+        console.log(`[Orders] 🛑 Descartando ticket duplicado para ${table} Ronda ${roundNumber} (<3.5s)`);
+        return;
+      }
+
+      // 1. Limpiar borrador y cancelar el temporizador de 5 minutos al confirmarse la comanda
+      if (tableDrafts[table]) {
+        if (tableDrafts[table].timeoutId) clearTimeout(tableDrafts[table].timeoutId);
+        delete tableDrafts[table];
+      }
+
       const dinerName = orderData.dinerName || activeDiner?.name || 'Comensal en Mesa';
 
       // Separar comida (KDS) y bebida (PDA)
@@ -773,9 +799,9 @@
         });
       }
 
-      // Crear la nueva tarjeta de Ticket oficial
+      // Crear la nueva tarjeta de Ticket oficial con id único
       const newTicket = {
-        id: 'ticket_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+        id: orderData.orderId || ('ticket_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4)),
         round: roundNumber,
         diner: dinerName,
         createdAt: Date.now(),
