@@ -92,3 +92,4 @@ cartafenix/
 1. Rama `main` configurada con raíz `/` (root).
 2. Servidor DNS configurado con registro CNAME apuntando a `carta.fenix.ninja`.
 3. Certificado SSL automático emitido por Cloudflare / GitHub Pages.
+

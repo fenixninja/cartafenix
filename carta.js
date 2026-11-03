@@ -13,9 +13,14 @@
 
   // Parámetros de URL
   const urlParams = new URLSearchParams(window.location.search);
-  const currentSessionId = urlParams.get('session') || 'live';
+  const currentSessionId = urlParams.get('session') || urlParams.get('sessionId') || 'live';
   const currentTable = urlParams.get('table') || 'Mesa 04';
   const currentDinerName = urlParams.get('name') || '';
+
+  // Canal de difusión local para sincronización instantánea en el mismo navegador
+  const broadcast = (typeof BroadcastChannel !== 'undefined')
+    ? new BroadcastChannel('fnx_restaurant_orders')
+    : null;
 
   // Estado del pedido en el cliente
   const cart = {};
@@ -64,7 +69,8 @@
 
       socket.on('connect', () => {
         console.log('[Carta Móvil] Conectado a socket:', socket.id);
-        // Unirse a la sala de la mesa/sesión
+        // Suscribirse a la sala de la mesa y de la sesión
+        socket.emit('subscribe_table', { table: currentTable, domain: CARTA_CONFIG.domain });
         if (currentSessionId && currentSessionId !== 'live') {
           socket.emit('join_qr_session', { sessionId: currentSessionId });
         }
@@ -190,15 +196,21 @@
       playTapSound(800, 'triangle', 0.35);
 
       // Emitir comanda finalizada a KDS y PDA
+      const orderPayload = {
+        table: currentTable,
+        sessionId: currentSessionId,
+        dinerName: currentDinerName || '',
+        items: orderItems,
+        foodCount,
+        drinkCount,
+        timestamp: new Date().toISOString()
+      };
+
       if (socket && socket.connected) {
-        socket.emit('order_submitted', {
-          table: currentTable,
-          sessionId: currentSessionId,
-          items: orderItems,
-          foodCount,
-          drinkCount,
-          timestamp: new Date().toISOString()
-        });
+        socket.emit('order_submitted', orderPayload);
+      }
+      if (broadcast) {
+        broadcast.postMessage({ type: 'order_submitted', data: orderPayload });
       }
 
       // Mostrar modal de éxito
@@ -216,6 +228,9 @@
   function emitItemToDesktop(itemData) {
     if (socket && socket.connected) {
       socket.emit('order_item_added', itemData);
+    }
+    if (broadcast) {
+      broadcast.postMessage({ type: 'order_item_added', data: itemData });
     }
   }
 
@@ -243,3 +258,4 @@
     } catch (_) {}
   }
 })();
+

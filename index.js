@@ -1,6 +1,6 @@
 /**
  * FNX RESTAURANT — LÓGICA DE CONTROL DESKTOP (KDS, PDA & POSA-QR)
- * Integración WhatAuth Pixel QR en tiempo real con Socket.IO
+ * Integración WhatAuth Pixel QR en tiempo real con Socket.IO y BroadcastChannel
  */
 
 (function () {
@@ -32,6 +32,35 @@
   ];
   let currentVideoIdx = 0;
 
+  // Estado de las comandas por mesa:
+  // - Mesa 04 arranca 100% VACÍA para recibir pedidos en vivo desde carta móvil / WhatAuth
+  // - Mesas 01 y 07 muestran comandas presenciales de sala
+  const liveTableOrders = {
+    'Mesa 01': {
+      kds: [
+        { id: 'arroz_horno', name: 'Arroz al Horno Tradicional', note: 'Costilla, morcilla y garbanzos', qty: 1, status: 'cooking' }
+      ],
+      pda: [
+        { id: 'mahou', name: 'Caña Mahou 5 Estrellas', icon: '🍺', qty: 2, served: false }
+      ],
+      diner: 'Cliente en Salón'
+    },
+    'Mesa 04': {
+      kds: [], // Totalmente vacía de inicio como requiere el usuario
+      pda: [], // Totalmente vacía de inicio como requiere el usuario
+      diner: null
+    },
+    'Mesa 07': {
+      kds: [
+        { id: 'fideua', name: 'Fideuà de Gandía con Alioli', note: 'Fideo fino, rape y gambas', qty: 1, status: 'cooking' }
+      ],
+      pda: [
+        { id: 'moet', name: 'Champagne Moët & Chandon', icon: '🍾', qty: 1, served: false }
+      ],
+      diner: 'Reserva VIP'
+    }
+  };
+
   // Estado reactivo
   let whatAuthSocket = null;
   let currentQrSession = null;
@@ -43,6 +72,11 @@
   let kdsTimerInterval = null;
   let kdsElapsedSeconds = 0;
 
+  // Canal local BroadcastChannel
+  const broadcast = (typeof BroadcastChannel !== 'undefined')
+    ? new BroadcastChannel('fnx_restaurant_orders')
+    : null;
+
   // ========================================================
   // INICIALIZACIÓN
   // ========================================================
@@ -51,8 +85,9 @@
     initVideoBackground();
     initTableSwitcher();
     initSoundToggle();
-    initKdsTimer();
+    renderTableOrders(RESTAURANT_CONFIG.currentTable);
     initWhatAuthSocket();
+    initBroadcastChannel();
   });
 
   // ========================================================
@@ -81,7 +116,6 @@
     const videoPlayer = document.getElementById('bg-video-player');
     if (!videoPlayer) return;
 
-    // Garantizar que sea mudo por código (estrictamente sin audio)
     videoPlayer.muted = true;
     videoPlayer.defaultMuted = true;
     videoPlayer.volume = 0;
@@ -112,17 +146,22 @@
 
     window.nextBackgroundVideo = playNextVideo;
 
-    // Iniciar primer vídeo
     videoPlayer.play().catch((err) => {
       console.warn('[Video] Autoplay mitigado por política del navegador:', err);
     });
   }
 
   // ========================================================
-  // 3. SELECTOR DE MESAS (DEMO)
+  // 3. SELECTOR DE MESAS
+  // - Solo Mesa 04 tiene código QR WhatAuth activo
+  // - Mesas 01 y 07 ocultan el QR y muestran comanda directa de sala
   // ========================================================
   function initTableSwitcher() {
     const tabs = document.querySelectorAll('.table-tab-btn');
+    const standQrView = document.getElementById('stand-qr-view');
+    const standNoQrView = document.getElementById('stand-no-qr-view');
+    const noQrTableName = document.getElementById('no-qr-table-name');
+    const noQrZoneName = document.getElementById('no-qr-zone-name');
     const standTableTitle = document.getElementById('stand-table-title');
     const standZoneTitle = document.getElementById('stand-zone-title');
     const btnOpenMobile = document.getElementById('btn-open-mobile-menu');
@@ -139,40 +178,40 @@
         RESTAURANT_CONFIG.currentTable = tableName;
         RESTAURANT_CONFIG.currentZone = zoneName;
 
-        if (standTableTitle) standTableTitle.textContent = tableName.toUpperCase();
-        if (standZoneTitle) standZoneTitle.textContent = zoneName;
-
-        // Actualizar enlace de carta móvil
+        // Actualizar botón de carta móvil en cabecera
         if (btnOpenMobile) {
           const sessId = currentQrSession?.sessionId || 'live';
           btnOpenMobile.href = `carta.html?session=${sessId}&table=${encodeURIComponent(tableName)}`;
         }
 
-        // Resetear estado de verificación al cambiar mesa
-        resetStandVerification();
+        // LÓGICA DE QR: Solo Mesa 04 tiene QR
+        if (tableName === 'Mesa 04') {
+          if (standQrView) standQrView.classList.remove('hidden');
+          if (standNoQrView) standNoQrView.classList.add('hidden');
+          if (standTableTitle) standTableTitle.textContent = 'MESA 04';
+          if (standZoneTitle) standZoneTitle.textContent = 'Terraza Principal';
 
-        // Solicitar nuevo QR para esta mesa
-        requestTableQr(tableName, pin);
+          // Solicitar QR de Mesa 04 si aún no se había generado
+          if (!activeQrStyling && whatAuthSocket && whatAuthSocket.connected) {
+            requestTableQr('Mesa 04', 'N-401');
+          }
+        } else {
+          // Mesas 01 y 07: Sin QR, solo KDS y PDA
+          if (standQrView) standQrView.classList.add('hidden');
+          if (standNoQrView) standNoQrView.classList.remove('hidden');
+          if (noQrTableName) noQrTableName.textContent = tableName.toUpperCase();
+          if (noQrZoneName) noQrZoneName.textContent = zoneName;
+        }
+
+        // Renderizar KDS y PDA para la mesa seleccionada
+        renderTableOrders(tableName);
         playChime(440, 'sine', 0.1);
       });
     });
   }
 
-  function resetStandVerification() {
-    activeDiner = null;
-    const statusWaiting = document.getElementById('status-waiting');
-    const statusVerified = document.getElementById('status-verified');
-    if (statusWaiting) statusWaiting.classList.remove('hidden');
-    if (statusVerified) statusVerified.classList.add('hidden');
-
-    const kdsDiner = document.getElementById('kds-diner-04');
-    const pdaDiner = document.getElementById('pda-diner-04');
-    if (kdsDiner) kdsDiner.textContent = 'Comensal: Pendiente...';
-    if (pdaDiner) pdaDiner.textContent = 'Comensal: Conectando...';
-  }
-
   // ========================================================
-  // 4. SINTETIZADOR DE AUDIO (BELL CHIME SIN ASSETS EXTERNOS)
+  // 4. SINTETIZADOR DE AUDIO (BELL CHIME)
   // ========================================================
   function initSoundToggle() {
     const btn = document.getElementById('btn-sound-toggle');
@@ -212,22 +251,24 @@
   // ========================================================
   // 5. TEMPORIZADOR DE MARCHAS KDS
   // ========================================================
-  function initKdsTimer() {
-    const timerDigits = document.getElementById('timer-kds-04');
-    if (!timerDigits) return;
-
-    kdsElapsedSeconds = 145; // Arrancar en ~02:25 para dinamismo visual
-
+  function startKdsTimer() {
+    if (kdsTimerInterval) return;
+    kdsElapsedSeconds = 0;
     kdsTimerInterval = setInterval(() => {
       kdsElapsedSeconds++;
-      const m = Math.floor(kdsElapsedSeconds / 60).toString().padStart(2, '0');
-      const s = (kdsElapsedSeconds % 60).toString().padStart(2, '0');
-      timerDigits.textContent = `${m}:${s}`;
+      const digits = document.getElementById('timer-kds-digits');
+      if (digits) digits.textContent = formatTimer(kdsElapsedSeconds);
     }, 1000);
   }
 
+  function formatTimer(totalSecs) {
+    const mins = Math.floor(totalSecs / 60);
+    const secs = totalSecs % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  }
+
   // ========================================================
-  // 6. CONEXIÓN WEBSOCKET WHATAUTH
+  // 6. CONEXIÓN WEBSOCKET WHATAUTH & SALA DE MESA
   // ========================================================
   function initWhatAuthSocket() {
     try {
@@ -240,8 +281,14 @@
 
       socket.on('connect', () => {
         console.log('[WhatAuth WS] Conectado a', RESTAURANT_CONFIG.wsUrl, 'ID:', socket.id);
+        // Suscribirse a la mesa y al dominio
+        socket.emit('subscribe_table', { table: RESTAURANT_CONFIG.currentTable, domain: RESTAURANT_CONFIG.domain });
         socket.emit('subscribe_pixel', { domain: RESTAURANT_CONFIG.domain });
-        requestTableQr(RESTAURANT_CONFIG.currentTable, 'N-401');
+
+        // Solo solicitar QR para Mesa 04
+        if (RESTAURANT_CONFIG.currentTable === 'Mesa 04') {
+          requestTableQr('Mesa 04', 'N-401');
+        }
       });
 
       // Recepción de QR generado por el servidor
@@ -251,7 +298,6 @@
         console.log('[WhatAuth WS] QR Ready para mesa:', data);
 
         let walink = data.walink || '';
-        // Forzar número oficial de FNX en wa.me si aplica
         if (RESTAURANT_CONFIG.phone && walink) {
           try {
             const u = new URL(walink);
@@ -267,11 +313,9 @@
 
         renderStandQr(walink);
 
-        // Actualizar botón directo de WhatsApp
         const btnDirectWa = document.getElementById('btn-direct-wa');
         if (btnDirectWa) btnDirectWa.href = walink;
 
-        // Actualizar botón de carta móvil con sessionId
         const btnOpenMobile = document.getElementById('btn-open-mobile-menu');
         if (btnOpenMobile) {
           btnOpenMobile.href = `carta.html?session=${data.sessionId}&table=${encodeURIComponent(RESTAURANT_CONFIG.currentTable)}`;
@@ -281,15 +325,33 @@
       // Escaneo verificado de WhatsApp
       socket.on('res_pixel_qr', handleScanVerified);
       socket.on('qr_verified', handleScanVerified);
+      socket.on('pixel_qr_verified', handleScanVerified);
 
-      // Eventos de comanda interactiva desde carta móvil
-      socket.on('order_item_added', handleMobileOrderItem);
-      socket.on('order_submitted', handleMobileOrderSubmit);
+      // Eventos de comanda interactiva desde carta móvil vía Socket.IO
+      socket.on('order_item_added', handleIncomingOrderItem);
+      socket.on('order_submitted', handleIncomingOrderSubmitted);
 
       whatAuthSocket = socket;
     } catch (err) {
       console.warn('[WhatAuth WS] Error inicializando socket:', err);
     }
+  }
+
+  // ========================================================
+  // 6B. CANAL LOCAL BROADCASTCHANNEL (SIN LATENCIA)
+  // ========================================================
+  function initBroadcastChannel() {
+    if (!broadcast) return;
+    broadcast.onmessage = (event) => {
+      const { type, data } = event.data || {};
+      if (type === 'order_item_added') {
+        console.log('[BroadcastChannel] 📦 order_item_added:', data);
+        handleIncomingOrderItem(data);
+      } else if (type === 'order_submitted') {
+        console.log('[BroadcastChannel] 🚀 order_submitted:', data);
+        handleIncomingOrderSubmitted(data);
+      }
+    };
   }
 
   function requestTableQr(tableName, pin) {
@@ -303,7 +365,7 @@
   }
 
   // ========================================================
-  // 7. RENDERIZADO DEL QR PIXEL EN EL ATRIL
+  // 7. RENDERIZADO DEL QR PIXEL EN EL ATRIL (SIN MARGEN BLANCO)
   // ========================================================
   function renderStandQr(walink) {
     const target = document.getElementById('stand-qr-target');
@@ -342,7 +404,6 @@
 
       activeQrStyling.append(target);
 
-      // Auto-ajuste estricto del viewBox para eliminar todo el margen blanco sobrante
       const fitSvgViewBox = () => {
         const svg = target.querySelector('svg');
         if (!svg) return;
@@ -357,7 +418,7 @@
             const qrSize = count * dotSize;
             const offsetX = Math.floor((opts.width - qrSize) / 2);
             const offsetY = Math.floor((opts.height - qrSize) / 2);
-            const pad = 2; // Margen mínimo limpio y seguro
+            const pad = 2;
             svg.setAttribute('viewBox', `${offsetX - pad} ${offsetY - pad} ${qrSize + 2 * pad} ${qrSize + 2 * pad}`);
           }
         } catch (err) {
@@ -375,19 +436,21 @@
   }
 
   // ========================================================
-  // 8. ESCANEO VERIFICADO (CAMBIO DE ESTADO EN VIVO)
+  // 8. ESCANEO VERIFICADO
   // ========================================================
   function handleScanVerified(data) {
     console.log('[WhatAuth] 🎯 ¡Mesa escaneada y verificada!', data);
 
     const userObj = data?.user || {};
-    const rawName = userObj.name || data?.senderName || data?.pushName || 'Carlos Rivas';
+    const rawName = userObj.name || data?.senderName || data?.pushName || 'FNX Rent';
     const cleanName = String(rawName).trim();
     const rawPhone = userObj.phone || data?.senderPhone || data?.phone || RESTAURANT_CONFIG.phone;
 
     activeDiner = { name: cleanName, phone: rawPhone };
+    if (liveTableOrders['Mesa 04']) {
+      liveTableOrders['Mesa 04'].diner = cleanName;
+    }
 
-    // 1. Posa-QR: Revelar tarjeta verificada
     const statusWaiting = document.getElementById('status-waiting');
     const statusVerified = document.getElementById('status-verified');
     const verifiedName = document.getElementById('verified-customer-name');
@@ -398,150 +461,305 @@
     if (verifiedName) verifiedName.textContent = cleanName;
     if (verifiedPhone) verifiedPhone.textContent = '🔒 ' + maskPhone(rawPhone);
 
-    // 2. KDS y PDA: Asignar nombre del comensal en los tickets
-    const kdsDiner = document.getElementById('kds-diner-04');
-    const pdaDiner = document.getElementById('pda-diner-04');
-    if (kdsDiner) kdsDiner.textContent = `Comensal: ${cleanName}`;
-    if (pdaDiner) pdaDiner.textContent = `Comensal: ${cleanName}`;
-
-    // Campanada de bienvenida
     playChime(659.25, 'triangle', 0.5);
+    renderTableOrders(RESTAURANT_CONFIG.currentTable);
   }
 
   function maskPhone(phone) {
     if (!phone) return '+34 ••• •• 121';
     const clean = String(phone).replace(/\D/g, '');
     if (clean.length < 4) return '••••' + clean;
-    if (clean.startsWith('34') && clean.length === 11) {
-      return `+34 ••• •• ${clean.slice(-3)}`;
-    }
     return `+34 ••• •• ${clean.slice(-3)}`;
   }
 
   // ========================================================
-  // 9. RECEPCIÓN EN TIEMPO REAL DESDE CARTA MÓVIL
+  // 9. PROCESAMIENTO DE COMANDA EN TIEMPO REAL
   // ========================================================
-  function handleMobileOrderItem(item) {
-    console.log('[Socket] 📦 Producto añadido en móvil:', item);
-    playChime(784, 'sine', 0.2);
+  function handleIncomingOrderItem(itemData) {
+    if (!itemData || !itemData.name) return;
+    const table = itemData.table || RESTAURANT_CONFIG.currentTable;
 
-    if (!item || !item.name) return;
+    if (!liveTableOrders[table]) {
+      liveTableOrders[table] = { kds: [], pda: [], diner: null };
+    }
 
-    // Si es paella -> va a KDS Cocina
-    if (item.category === 'paellas' || item.name.toLowerCase().includes('paella')) {
-      addKdsItem(item);
+    const tData = liveTableOrders[table];
+
+    // Clasificar: paellas a KDS, bebidas a PDA
+    if (itemData.category === 'paellas' || itemData.name.toLowerCase().includes('paella')) {
+      const existing = tData.kds.find((i) => i.name === itemData.name);
+      if (existing) {
+        existing.qty += (itemData.qty || 1);
+      } else {
+        const note = itemData.name.toLowerCase().includes('señorret')
+          ? 'Todo pelado · Gamba roja y sepia'
+          : 'Pollo, conejo, bajoqueta y garrofó';
+        tData.kds.push({
+          id: itemData.id || ('kds_' + Date.now()),
+          name: itemData.name,
+          note,
+          qty: itemData.qty || 1,
+          status: 'cooking'
+        });
+      }
+      startKdsTimer();
     } else {
-      // Si es vino o agua -> va a PDA Camarero
-      addPdaItem(item);
+      const existing = tData.pda.find((i) => i.name === itemData.name);
+      if (existing) {
+        existing.qty += (itemData.qty || 1);
+      } else {
+        const icon = itemData.name.toLowerCase().includes('rioja') ? '🍷' : (itemData.name.toLowerCase().includes('rueda') ? '🥂' : '💧');
+        tData.pda.push({
+          id: itemData.id || ('pda_' + Date.now()),
+          name: itemData.name,
+          qty: itemData.qty || 1,
+          icon,
+          served: false
+        });
+      }
     }
+
+    playChime(784, 'triangle', 0.25);
+    renderTableOrders(table);
   }
 
-  function handleMobileOrderSubmit(order) {
-    console.log('[Socket] 🚀 Comanda confirmada desde carta móvil:', order);
-    playChime(880, 'sine', 0.4);
+  function handleIncomingOrderSubmitted(orderData) {
+    if (!orderData) return;
+    const table = orderData.table || RESTAURANT_CONFIG.currentTable;
 
-    // Actualizar badges
-    const kdsCount = document.getElementById('kds-count');
-    const pdaCount = document.getElementById('pda-count');
-    if (kdsCount && order?.foodCount) kdsCount.textContent = order.foodCount;
-    if (pdaCount && order?.drinkCount) pdaCount.textContent = order.drinkCount;
-  }
-
-  function addKdsItem(item) {
-    const list = document.getElementById('kds-items-04');
-    if (!list) return;
-
-    const li = document.createElement('li');
-    li.className = 'ticket-item popIn';
-    li.innerHTML = `
-      <span class="item-qty">${item.qty || 1}x</span>
-      <div class="item-info">
-        <span class="item-name">${item.name}</span>
-        <span class="item-note">Pedido móvil en directo</span>
-      </div>
-      <span class="item-status-pill cooking">Fuego Activo</span>
-    `;
-    list.appendChild(li);
-
-    const kdsCount = document.getElementById('kds-count');
-    if (kdsCount) {
-      kdsCount.textContent = parseInt(kdsCount.textContent || '0', 10) + 1;
+    if (!liveTableOrders[table]) {
+      liveTableOrders[table] = { kds: [], pda: [], diner: null };
     }
-  }
 
-  function addPdaItem(item) {
-    const list = document.getElementById('pda-items-04');
-    if (!list) return;
-
-    const div = document.createElement('div');
-    div.className = 'pda-item-row popIn';
-    const icon = item.name.toLowerCase().includes('vino') ? '🍷' : '💧';
-    div.innerHTML = `
-      <div class="pda-item-main">
-        <span class="pda-qty">${item.qty || 1}x</span>
-        <span class="pda-icon">${icon}</span>
-        <span class="pda-label">${item.name}</span>
-      </div>
-      <button type="button" class="btn-pda-serve" onclick="serveItem(this, '${item.name}')">
-        <span>✓ Servir</span>
-      </button>
-    `;
-    list.appendChild(div);
-
-    const pdaCount = document.getElementById('pda-count');
-    if (pdaCount) {
-      pdaCount.textContent = parseInt(pdaCount.textContent || '0', 10) + 1;
+    const tData = liveTableOrders[table];
+    if (orderData.dinerName) {
+      tData.diner = orderData.dinerName;
     }
-  }
 
-  // ========================================================
-  // 10. ACCIONES INTERACTIVAS DEL KDS & PDA
-  // ========================================================
-  window.markDishReady = function (tableName) {
-    const ticket = document.getElementById('ticket-kds-04');
-    if (ticket) {
-      ticket.classList.add('ready');
-      const pills = ticket.querySelectorAll('.item-status-pill');
-      pills.forEach((p) => {
-        p.className = 'item-status-pill done';
-        p.textContent = 'Emplatado';
+    if (Array.isArray(orderData.items)) {
+      orderData.items.forEach((item) => {
+        if (item.category === 'paellas' || item.name.toLowerCase().includes('paella')) {
+          const existing = tData.kds.find((i) => i.name === item.name);
+          if (existing) {
+            existing.qty = Math.max(existing.qty, item.qty);
+          } else {
+            const note = item.name.toLowerCase().includes('señorret')
+              ? 'Todo pelado · Gamba roja y sepia'
+              : 'Pollo, conejo, bajoqueta y garrofó';
+            tData.kds.push({
+              id: item.id || ('kds_' + Date.now()),
+              name: item.name,
+              note,
+              qty: item.qty,
+              status: 'cooking'
+            });
+          }
+        } else {
+          const existing = tData.pda.find((i) => i.name === item.name);
+          if (existing) {
+            existing.qty = Math.max(existing.qty, item.qty);
+          } else {
+            const icon = item.name.toLowerCase().includes('rioja') ? '🍷' : (item.name.toLowerCase().includes('rueda') ? '🥂' : '💧');
+            tData.pda.push({
+              id: item.id || ('pda_' + Date.now()),
+              name: item.name,
+              qty: item.qty,
+              icon,
+              served: false
+            });
+          }
+        }
       });
     }
 
-    // Avisar al PDA
-    const pdaAlert = document.getElementById('pda-kitchen-alert');
-    const pdaAlertText = document.getElementById('pda-alert-text');
-    if (pdaAlert && pdaAlertText) {
-      pdaAlertText.textContent = `Llevar Paellas a ${tableName}`;
-      pdaAlert.classList.remove('hidden');
+    // Doble campana de fiesta
+    playChime(784.0, 'triangle', 0.2);
+    setTimeout(() => playChime(1046.5, 'triangle', 0.35), 180);
+
+    startKdsTimer();
+    renderTableOrders(table);
+  }
+
+  // ========================================================
+  // 10. RENDERIZADO REACTIVO DE KDS Y PDA
+  // ========================================================
+  function renderTableOrders(table) {
+    if (table !== RESTAURANT_CONFIG.currentTable) return;
+
+    const tData = liveTableOrders[table] || { kds: [], pda: [], diner: null };
+    const kdsContainer = document.getElementById('kds-tickets-container');
+    const pdaContainer = document.getElementById('pda-tickets-container');
+    const kdsCountEl = document.getElementById('kds-count');
+    const pdaCountEl = document.getElementById('pda-count');
+
+    // 1. KDS COCINA
+    let totalFoodCount = 0;
+    tData.kds.forEach((i) => (totalFoodCount += i.qty));
+    if (kdsCountEl) kdsCountEl.textContent = totalFoodCount;
+
+    if (tData.kds.length === 0) {
+      if (kdsContainer) {
+        kdsContainer.innerHTML = `
+          <div class="kds-empty-placeholder" id="kds-empty-placeholder">
+            <div class="empty-icon-wrap">🍳</div>
+            <h4>Cocina en Espera de Comanda</h4>
+            <p>Escanea el QR de la ${table} o pulsa "Abrir Carta Móvil" para marchar paellas en tiempo real.</p>
+          </div>
+        `;
+      }
+    } else {
+      const dinerName = tData.diner || activeDiner?.name || 'Comensal en Mesa';
+      if (kdsContainer) {
+        kdsContainer.innerHTML = `
+          <article class="kds-ticket-card" id="ticket-kds-active">
+            <div class="ticket-header">
+              <div class="ticket-table-tag">
+                <span class="badge-table">${table.toUpperCase()}</span>
+                <span class="ticket-diner">Comensal: ${escapeHtml(dinerName)}</span>
+              </div>
+              <div class="ticket-timer-badge">
+                <span class="timer-dot"></span>
+                <span class="timer-digits" id="timer-kds-digits">${formatTimer(kdsElapsedSeconds)}</span>
+              </div>
+            </div>
+
+            <div class="ticket-body">
+              <ul class="ticket-items-list">
+                ${tData.kds
+                  .map(
+                    (item) => `
+                  <li class="ticket-item">
+                    <span class="item-qty">${item.qty}x</span>
+                    <div class="item-info">
+                      <span class="item-name">${escapeHtml(item.name)}</span>
+                      <span class="item-note">${escapeHtml(item.note || '')}</span>
+                    </div>
+                    <span class="item-status-pill ${item.status === 'ready' ? 'ready' : 'cooking'}">
+                      ${item.status === 'ready' ? '✓ Listo para Servir' : 'Fuego Activo'}
+                    </span>
+                  </li>
+                `
+                  )
+                  .join('')}
+              </ul>
+            </div>
+
+            <div class="ticket-footer">
+              <button type="button" class="btn-kds-action btn-ready" onclick="window.markDishReady('${table}')">
+                <span>🍽️ Marcar Listo para Servir</span>
+              </button>
+            </div>
+          </article>
+        `;
+      }
     }
 
-    playChime(987.77, 'triangle', 0.6);
+    // 2. PDA SALA (BEBIDAS)
+    let totalDrinkCount = 0;
+    tData.pda.forEach((i) => {
+      if (!i.served) totalDrinkCount += i.qty;
+    });
+    if (pdaCountEl) pdaCountEl.textContent = totalDrinkCount;
+
+    if (tData.pda.length === 0) {
+      if (pdaContainer) {
+        pdaContainer.innerHTML = `
+          <div class="pda-empty-placeholder" id="pda-empty-placeholder">
+            <div class="empty-icon-wrap">🍷</div>
+            <h4>Sin Bebidas Pendientes</h4>
+            <p>Las bebidas añadidas desde la carta móvil aparecerán aquí para el servicio de sala.</p>
+          </div>
+        `;
+      }
+    } else {
+      const dinerName = tData.diner || activeDiner?.name || 'Conectando...';
+      if (pdaContainer) {
+        pdaContainer.innerHTML = `
+          <article class="pda-ticket-card" id="ticket-pda-active">
+            <div class="pda-ticket-header">
+              <div class="pda-table-badge">${table.toUpperCase()} · ${RESTAURANT_CONFIG.currentZone.toUpperCase()}</div>
+              <div class="pda-diner-name">Comensal: ${escapeHtml(dinerName)}</div>
+            </div>
+
+            <div class="pda-drinks-list">
+              ${tData.pda
+                .map(
+                  (item, idx) => `
+                <div class="pda-item-row ${item.served ? 'item-served' : ''}" id="pda-row-${idx}">
+                  <div class="pda-item-main">
+                    <span class="pda-qty">${item.qty}x</span>
+                    <span class="pda-icon">${item.icon || '🍷'}</span>
+                    <span class="pda-label">${escapeHtml(item.name)}</span>
+                  </div>
+                  <button type="button" class="btn-pda-serve ${item.served ? 'btn-served' : ''}" 
+                    onclick="window.serveDrinkItem('${table}', ${idx})">
+                    <span>${item.served ? '✓ Servido' : '✓ Servir'}</span>
+                  </button>
+                </div>
+              `
+                )
+                .join('')}
+            </div>
+
+            <div class="pda-kitchen-alert hidden" id="pda-kitchen-alert">
+              <div class="alert-bell">🛎️</div>
+              <div class="alert-content">
+                <strong>¡Plato de Cocina Listo!</strong>
+                <p id="pda-alert-text">Llevar Paellas a ${table}</p>
+              </div>
+              <button type="button" class="btn-pda-delivered" onclick="window.clearKitchenAlert()">
+                <span>Entregado</span>
+              </button>
+            </div>
+          </article>
+        `;
+      }
+    }
+  }
+
+  function escapeHtml(str) {
+    return String(str || '').replace(/[&<>"']/g, (m) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    })[m]);
+  }
+
+  // ========================================================
+  // 11. ACCIONES GLOBALES EXPUESTAS
+  // ========================================================
+  window.markDishReady = function (tableName) {
+    const tData = liveTableOrders[tableName];
+    if (tData) {
+      tData.kds.forEach((i) => (i.status = 'ready'));
+    }
+    const alertEl = document.getElementById('pda-kitchen-alert');
+    const alertText = document.getElementById('pda-alert-text');
+    if (alertEl) alertEl.classList.remove('hidden');
+    if (alertText) alertText.textContent = `Llevar Paellas a ${tableName}`;
+    playChime(880, 'sine', 0.4);
+    renderTableOrders(tableName);
   };
 
-  window.serveItem = function (btn, itemName) {
-    const row = btn.closest('.pda-item-row');
-    if (row) {
-      row.classList.toggle('served');
-      btn.textContent = row.classList.contains('served') ? 'Servido' : '✓ Servir';
+  window.serveDrinkItem = function (tableName, idx) {
+    const tData = liveTableOrders[tableName];
+    if (tData && tData.pda[idx]) {
+      tData.pda[idx].served = !tData.pda[idx].served;
       playChime(523.25, 'sine', 0.15);
+      renderTableOrders(tableName);
     }
   };
 
   window.clearKitchenAlert = function () {
-    const pdaAlert = document.getElementById('pda-kitchen-alert');
-    if (pdaAlert) pdaAlert.classList.add('hidden');
-    playChime(659.25, 'sine', 0.2);
+    const alertEl = document.getElementById('pda-kitchen-alert');
+    if (alertEl) alertEl.classList.add('hidden');
+    playChime(659.25, 'triangle', 0.2);
   };
 
-  // Exponer API global para pruebas manuales desde consola
-  window.FNXRestaurant = {
-    simulateScan: (name = 'Carlos Rivas', phone = '34627118121') => {
-      handleScanVerified({ user: { name, phone } });
-    },
-    simulateMobileItem: (name, category = 'paellas', qty = 1) => {
-      handleMobileOrderItem({ name, category, qty });
-    }
+  window.switchToTable = function (tableName) {
+    const targetTab = document.querySelector(`.table-tab-btn[data-table="${tableName}"]`);
+    if (targetTab) targetTab.click();
   };
 })();
-
