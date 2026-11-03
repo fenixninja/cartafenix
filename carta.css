@@ -95,6 +95,39 @@ body {
   letter-spacing: 0.5px;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lang-toggle-mobile {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  padding: 2px;
+}
+
+.lang-toggle-mobile .lang-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lang-toggle-mobile .lang-btn.active {
+  background: linear-gradient(135deg, var(--brand-purple), var(--brand-magenta));
+  color: #ffffff;
+  box-shadow: 0 0 8px rgba(224, 86, 253, 0.4);
+}
+
 .table-pill {
   display: inline-flex;
   align-items: center;
@@ -115,6 +148,52 @@ body {
   border-radius: 50%;
   background: #10B981;
   box-shadow: 0 0 6px #10B981;
+}
+
+/* ========================================================
+   BANNER DE RONDA ACTIVA (FEEDBACK POST-ENVÍO)
+   ======================================================== */
+.order-round-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.18) 0%, rgba(16, 185, 129, 0.08) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.45);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  margin-bottom: 20px;
+  animation: slideDownFade 0.3s ease-out;
+}
+
+.order-round-banner.hidden {
+  display: none;
+}
+
+.round-badge-icon {
+  font-size: 1.4rem;
+}
+
+.round-badge-text strong {
+  display: block;
+  font-size: 0.85rem;
+  color: #10B981;
+}
+
+.round-badge-text p {
+  font-size: 0.72rem;
+  color: #d1fae5;
+  margin-top: 2px;
+}
+
+@keyframes slideDownFade {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ========================================================

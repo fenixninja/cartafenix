@@ -258,6 +258,34 @@ body {
   color: #ffffff;
 }
 
+/* Selector de Idioma en Cabecera */
+.header-lang-switcher {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-light);
+  border-radius: 999px;
+  padding: 2px;
+}
+
+.header-lang-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.header-lang-btn.active {
+  background: linear-gradient(135deg, var(--brand-purple), var(--brand-magenta));
+  color: #ffffff;
+  box-shadow: 0 0 8px rgba(224, 86, 253, 0.4);
+}
+
 .header-cta-btn {
   display: inline-flex;
   align-items: center;
@@ -381,6 +409,36 @@ body {
   font-size: 0.8rem;
   color: var(--brand-cobalt);
   font-weight: 600;
+}
+
+/* Selector de Idioma en Atril de Mesa */
+.stand-lang-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  padding: 3px;
+  margin: 8px 0 10px;
+  gap: 3px;
+}
+
+.stand-lang-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.stand-lang-btn.active {
+  background: linear-gradient(135deg, var(--brand-purple), var(--brand-magenta));
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(224, 86, 253, 0.45);
 }
 
 /* Marco del Código QR con halo */
@@ -898,6 +956,77 @@ body {
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.5px;
+}
+
+/* ========================================================
+   BARRAS DE BORRADOR EN VIVO (ESTADO ENTRANDO KDS / PDA)
+   ======================================================== */
+.kds-live-draft-bar,
+.pda-live-draft-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 16px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  animation: draftPulse 2s infinite ease-in-out;
+}
+
+.kds-live-draft-bar.hidden,
+.pda-live-draft-bar.hidden {
+  display: none !important;
+}
+
+.kds-live-draft-bar {
+  background: rgba(255, 122, 0, 0.14);
+  border: 1px solid rgba(255, 122, 0, 0.45);
+  color: #ffb066;
+}
+
+.pda-live-draft-bar {
+  background: rgba(155, 81, 224, 0.14);
+  border: 1px solid rgba(155, 81, 224, 0.45);
+  color: #e0a6ff;
+}
+
+.draft-beacon {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.draft-beacon.orange {
+  background: #FF7A00;
+  box-shadow: 0 0 10px #FF7A00;
+}
+
+.draft-beacon.purple {
+  background: #E056FD;
+  box-shadow: 0 0 10px #E056FD;
+}
+
+.draft-text {
+  flex: 1;
+}
+
+.badge-round {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+@keyframes draftPulse {
+  0%, 100% { opacity: 0.88; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.006); }
 }
 
 /* ========================================================

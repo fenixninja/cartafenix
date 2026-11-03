@@ -18,7 +18,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
 
   <!-- Estilos Consola de Restaurante -->
-  <link rel="stylesheet" href="style.css?v=1.0.3" />
+  <link rel="stylesheet" href="style.css?v=1.0.4" />
 
   <!-- Socket.IO & QRCodeStyling -->
   <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
@@ -45,7 +45,7 @@
         <img src="src/img/logo.png" alt="FNX Restaurant Logo" class="brand-logo" />
         <div class="brand-texts">
           <h1 class="brand-title">FNX <span class="brand-accent">Restaurant</span></h1>
-          <p class="brand-tagline">Smart Table · KDS & PDA Live System</p>
+          <p class="brand-tagline" id="brand-tagline">Smart Table · KDS & PDA Live System</p>
         </div>
       </div>
     </div>
@@ -54,33 +54,39 @@
     <div class="header-center">
       <div class="service-live-chip">
         <span class="pulse-beacon green"></span>
-        <span class="live-label">SERVICIO ACTIVO</span>
+        <span class="live-label" id="live-status-label">SERVICIO ACTIVO</span>
         <span class="chip-divider">·</span>
         <span id="live-clock" class="live-clock">14:30:00</span>
       </div>
 
       <!-- Selector Rápido de Mesas en Demo -->
       <div class="table-switcher" role="tablist" aria-label="Seleccionar mesa">
-        <button type="button" class="table-tab-btn" data-table="Mesa 01" data-zone="Salón Interior" data-pin="N-101">
+        <button type="button" class="table-tab-btn" data-table="Mesa 01" data-zone-es="Salón Interior" data-zone-en="Indoor Lounge" data-pin="N-101">
           <span class="tab-dot"></span>
-          <span class="tab-name">Mesa 01</span>
-          <span class="tab-zone">Salón</span>
+          <span class="tab-name" id="tab-name-01">Mesa 01</span>
+          <span class="tab-zone" id="tab-zone-01">Salón</span>
         </button>
-        <button type="button" class="table-tab-btn active" data-table="Mesa 04" data-zone="Terraza Principal" data-pin="N-401">
+        <button type="button" class="table-tab-btn active" data-table="Mesa 04" data-zone-es="Terraza Principal" data-zone-en="Main Terrace" data-pin="N-401">
           <span class="tab-dot"></span>
-          <span class="tab-name">Mesa 04</span>
-          <span class="tab-zone">Terraza</span>
+          <span class="tab-name" id="tab-name-04">Mesa 04</span>
+          <span class="tab-zone" id="tab-zone-04">Terraza</span>
         </button>
-        <button type="button" class="table-tab-btn" data-table="Mesa 07" data-zone="Reservado VIP" data-pin="N-701">
+        <button type="button" class="table-tab-btn" data-table="Mesa 07" data-zone-es="Reservado VIP" data-zone-en="VIP Lounge" data-pin="N-701">
           <span class="tab-dot"></span>
-          <span class="tab-name">Mesa 07</span>
-          <span class="tab-zone">VIP</span>
+          <span class="tab-name" id="tab-name-07">Mesa 07</span>
+          <span class="tab-zone" id="tab-zone-07">VIP</span>
         </button>
       </div>
     </div>
 
     <!-- Acciones de Cabecera -->
     <div class="header-right">
+      <!-- Selector de Idioma Global -->
+      <div class="header-lang-switcher" role="tablist" aria-label="Language Selector">
+        <button type="button" class="header-lang-btn" id="header-lang-es" data-lang="es">ES</button>
+        <button type="button" class="header-lang-btn" id="header-lang-en" data-lang="en">EN</button>
+      </div>
+
       <button type="button" id="btn-sound-toggle" class="header-tool-btn" title="Activar/Silenciar avisos sonoros">
         <span class="tool-icon" id="sound-icon">🔔</span>
         <span class="tool-label" id="sound-label">Sonido ON</span>
@@ -88,7 +94,7 @@
 
       <a id="btn-open-mobile-menu" class="header-cta-btn" href="carta.html?table=Mesa+04" target="_blank" rel="noopener noreferrer">
         <span class="cta-icon">📱</span>
-        <span>Abrir Carta Móvil</span>
+        <span id="btn-open-mobile-text">Abrir Carta Móvil</span>
       </a>
     </div>
   </header>
@@ -118,6 +124,12 @@
               </div>
               <div class="stand-table-badge" id="stand-table-title">MESA 04</div>
               <p class="stand-table-zone" id="stand-zone-title">Terraza Principal</p>
+
+              <!-- Selector de Idioma de QR en el Atril -->
+              <div class="stand-lang-toggle" role="tablist" aria-label="QR Language">
+                <button type="button" class="stand-lang-btn" id="stand-lang-es" data-lang="es">🇪🇸 ES</button>
+                <button type="button" class="stand-lang-btn" id="stand-lang-en" data-lang="en">🇬🇧 EN</button>
+              </div>
             </div>
 
             <!-- Marco del Código QR Pixel con halo y escáner -->
@@ -132,15 +144,15 @@
             <div class="stand-status-box" id="stand-status-box">
               <div class="status-waiting" id="status-waiting">
                 <span class="pulse-beacon purple"></span>
-                <span class="status-text">Escanea con WhatsApp para ver la carta y pedir</span>
+                <span class="status-text" id="status-waiting-text">Escanea con WhatsApp para ver la carta y pedir</span>
               </div>
 
               <div class="status-verified hidden" id="status-verified">
                 <div class="verified-avatar">👤</div>
                 <div class="verified-details">
                   <div class="verified-title">
-                    <span>¡Mesa Conectada!</span>
-                    <span class="verified-badge">✓ VERIFICADO</span>
+                    <span id="verified-title-text">¡Mesa Conectada!</span>
+                    <span class="verified-badge" id="verified-badge-pill">✓ VERIFICADO</span>
                   </div>
                   <div class="verified-name" id="verified-customer-name">Carlos Rivas</div>
                   <div class="verified-phone" id="verified-customer-phone">🔒 +34 ••• •• 121</div>
@@ -152,24 +164,24 @@
             <div class="stand-actions">
               <a id="btn-direct-wa" class="btn-stand-wa" href="#" target="_blank" rel="noopener noreferrer">
                 <span class="wa-bubble-icon">💬</span>
-                <span>Abrir en WhatsApp</span>
+                <span id="btn-wa-text">Abrir en WhatsApp</span>
               </a>
             </div>
           </div>
 
           <!-- VISTA 2: MESAS SIN QR (MESAS 01 Y 07 - COMANDA DE SALA) -->
           <div class="stand-no-qr-view hidden" id="stand-no-qr-view">
-            <div class="no-qr-badge-pill">COMANDA DE SALA DIRECTA</div>
+            <div class="no-qr-badge-pill" id="no-qr-pill">COMANDA DE SALA DIRECTA</div>
             <div class="no-qr-icon-hero">🛎️</div>
             <h3 class="no-qr-table-title" id="no-qr-table-name">MESA 01</h3>
             <p class="no-qr-zone-text" id="no-qr-zone-name">Salón Principal</p>
 
             <div class="no-qr-card-info">
-              <p class="no-qr-desc">Esta mesa opera sin código QR interactivo. El servicio y las marchas se gestionan de forma presencial por camarero en el KDS y PDA contiguos.</p>
+              <p class="no-qr-desc" id="no-qr-desc-text">Esta mesa opera sin código QR interactivo. El servicio y las marchas se gestionan de forma presencial por camarero en el KDS y PDA contiguos.</p>
             </div>
 
             <button type="button" class="btn-goto-mesa04" onclick="switchToTable('Mesa 04')">
-              <span>🔄 Ver Mesa 04 (Con WhatAuth QR)</span>
+              <span id="btn-goto-mesa04-text">🔄 Ver Mesa 04 (Con WhatAuth QR)</span>
             </button>
           </div>
 
@@ -189,17 +201,26 @@
           <div class="panel-identity">
             <div class="panel-icon-box orange">👨‍🍳</div>
             <div class="panel-heading">
-              <h2 class="panel-title">KDS Cocina <span class="panel-sub-tag">PANTALLA DE MARCHAS</span></h2>
-              <p class="panel-desc">Comandas de paellas y arroces en tiempo real</p>
+              <h2 class="panel-title" id="kds-title-wrap">
+                <span id="kds-title-text">KDS Cocina</span>
+                <span class="panel-sub-tag" id="kds-subtag-text">PANTALLA DE MARCHAS</span>
+              </h2>
+              <p class="panel-desc" id="kds-desc-text">Comandas de paellas y arroces en tiempo real</p>
             </div>
           </div>
 
           <div class="panel-metrics">
             <div class="metric-pill">
               <span class="metric-num" id="kds-count">0</span>
-              <span class="metric-lbl">EN FUEGO</span>
+              <span class="metric-lbl" id="kds-metric-label">EN FUEGO</span>
             </div>
           </div>
+        </div>
+
+        <!-- Barra de Borrador en Vivo KDS (Estado Entrando) -->
+        <div class="kds-live-draft-bar hidden" id="kds-draft-bar">
+          <span class="draft-beacon orange"></span>
+          <span class="draft-text" id="kds-draft-text">⚡ MESA 04 · Comensal añadiendo platos a la comanda...</span>
         </div>
 
         <!-- Lista de Comandas KDS (Tarjetas Kanban de cocina) -->
@@ -207,8 +228,8 @@
           <!-- Estado Inicial Vacío: A la espera de comanda en vivo -->
           <div class="kds-empty-placeholder" id="kds-empty-placeholder">
             <div class="empty-icon-wrap">🍳</div>
-            <h4>Cocina en Espera de Comanda</h4>
-            <p>Escanea el QR de la Mesa 04 o pulsa "Abrir Carta Móvil" para marchar paellas en tiempo real.</p>
+            <h4 id="kds-empty-title">Cocina en Espera de Comanda</h4>
+            <p id="kds-empty-desc">Escanea el QR de la Mesa 04 o pulsa "Abrir Carta Móvil" para marchar paellas en tiempo real.</p>
           </div>
         </div>
       </div>
@@ -219,17 +240,26 @@
           <div class="panel-identity">
             <div class="panel-icon-box purple">📱</div>
             <div class="panel-heading">
-              <h2 class="panel-title">PDA Camarero <span class="panel-sub-tag">COMANDERO DE SALA</span></h2>
-              <p class="panel-desc">Bebidas y servicio a mesa</p>
+              <h2 class="panel-title" id="pda-title-wrap">
+                <span id="pda-title-text">PDA Camarero</span>
+                <span class="panel-sub-tag" id="pda-subtag-text">COMANDERO DE SALA</span>
+              </h2>
+              <p class="panel-desc" id="pda-desc-text">Bebidas y servicio a mesa</p>
             </div>
           </div>
 
           <div class="panel-metrics">
             <div class="metric-pill purple">
               <span class="metric-num" id="pda-count">0</span>
-              <span class="metric-lbl">POR SERVIR</span>
+              <span class="metric-lbl" id="pda-metric-label">POR SERVIR</span>
             </div>
           </div>
+        </div>
+
+        <!-- Barra de Borrador en Vivo PDA (Estado Entrando) -->
+        <div class="pda-live-draft-bar hidden" id="pda-draft-bar">
+          <span class="draft-beacon purple"></span>
+          <span class="draft-text" id="pda-draft-text">⚡ MESA 04 · Comensal seleccionando bebidas...</span>
         </div>
 
         <!-- Lista de Comandas PDA -->
@@ -237,8 +267,8 @@
           <!-- Estado Inicial Vacío: A la espera de bebidas en vivo -->
           <div class="pda-empty-placeholder" id="pda-empty-placeholder">
             <div class="empty-icon-wrap">🍷</div>
-            <h4>Sin Bebidas Pendientes</h4>
-            <p>Las bebidas añadidas desde la carta móvil aparecerán aquí para el servicio de sala.</p>
+            <h4 id="pda-empty-title">Sin Bebidas Pendientes</h4>
+            <p id="pda-empty-desc">Las bebidas añadidas desde la carta móvil aparecerán aquí para el servicio de sala.</p>
           </div>
         </div>
       </div>
@@ -246,8 +276,7 @@
   </main>
 
   <!-- Lógica Principal -->
-  <script src="index.js?v=1.0.3"></script>
+  <script src="index.js?v=1.0.4"></script>
 </body>
 
 </html>
-

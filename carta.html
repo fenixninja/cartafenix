@@ -18,7 +18,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
 
   <!-- Estilos Carta Móvil -->
-  <link rel="stylesheet" href="carta.css?v=1.0.3" />
+  <link rel="stylesheet" href="carta.css?v=1.0.4" />
 
   <!-- Socket.IO Client -->
   <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
@@ -26,28 +26,45 @@
 
 <body>
   <div class="mobile-container">
-    <!-- CABECERA CARTA MÓVIL -->
+    <!-- CABECERA CARTA MÓVIL CON SELECTOR DE IDIOMA -->
     <header class="mobile-header">
       <div class="header-brand">
         <img src="src/img/logo.png" alt="FNX" class="header-logo" />
         <div>
           <h1 class="header-title">FNX <span>Restaurant</span></h1>
-          <p class="header-sub">Carta Digital en Vivo</p>
+          <p class="header-sub" id="header-sub-text">Carta Digital en Vivo</p>
         </div>
       </div>
 
-      <div class="table-pill" id="mobile-table-pill">
-        <span class="pulse-dot"></span>
-        <span id="mobile-table-name">Mesa 04</span>
+      <div class="header-actions">
+        <!-- Selector Rápido de Idioma -->
+        <div class="lang-toggle-mobile" role="tablist" aria-label="Language Selector">
+          <button type="button" class="lang-btn" id="lang-btn-es" data-lang="es">ES</button>
+          <button type="button" class="lang-btn" id="lang-btn-en" data-lang="en">EN</button>
+        </div>
+
+        <div class="table-pill" id="mobile-table-pill">
+          <span class="pulse-dot"></span>
+          <span id="mobile-table-name">Mesa 04</span>
+        </div>
       </div>
     </header>
 
     <!-- BANNER DE BIENVENIDA AL COMENSAL -->
     <section class="welcome-banner" id="welcome-banner">
-      <div class="welcome-tag">MESA CONECTADA · WHATSAUTH</div>
+      <div class="welcome-tag" id="welcome-tag-text">MESA CONECTADA · WHATSAUTH</div>
       <h2 class="welcome-greeting" id="welcome-greeting">¡Hola, Comensal! 🍽️✨</h2>
-      <p class="welcome-desc">Selecciona tus platos y bebidas. Cada cambio se sincroniza en directo con la cocina y el camarero.</p>
+      <p class="welcome-desc" id="welcome-desc-text">Selecciona tus platos y bebidas. Cada cambio se sincroniza en directo con la cocina y el camarero.</p>
     </section>
+
+    <!-- BANNER DE RONDA ACTIVA (FEEDBACK POST-ENVÍO) -->
+    <div class="order-round-banner hidden" id="order-round-banner">
+      <span class="round-badge-icon">✅</span>
+      <div class="round-badge-text">
+        <strong id="round-badge-title">Comanda enviada a cocina (Ronda 1)</strong>
+        <p id="round-badge-subtitle">¿Deseas pedir algo más? Selecciona nuevos platos o bebidas abajo.</p>
+      </div>
+    </div>
 
     <!-- SECCIONES DE LA CARTA (ULTRA-MINIMALISTA) -->
     <main class="menu-sections">
@@ -56,21 +73,21 @@
         <div class="category-header">
           <span class="cat-icon">🥘</span>
           <div class="cat-titles">
-            <h3 class="cat-title">Paellas & Arroces</h3>
-            <span class="cat-badge orange">DIRECTO A COCINA · KDS</span>
+            <h3 class="cat-title" id="cat-title-paellas">Paellas & Arroces</h3>
+            <span class="cat-badge orange" id="cat-badge-paellas">DIRECTO A COCINA · KDS</span>
           </div>
         </div>
 
         <div class="products-grid">
           <!-- Producto 1: Paella Valenciana -->
-          <article class="product-card" data-id="paella-valenciana" data-name="Paella Valenciana Tradicional" data-price="18.00" data-cat="paellas">
+          <article class="product-card" data-id="paella-valenciana" data-price="18.00" data-cat="paellas">
             <div class="product-header">
-              <h4 class="product-title">Paella Valenciana Tradicional</h4>
+              <h4 class="product-title" id="prod-title-paella-valenciana">Paella Valenciana Tradicional</h4>
               <span class="product-price">18,00 €</span>
             </div>
-            <p class="product-desc">Pollo de corral, conejo, bajoqueta, garrofó y azafrán en hebra D.O. Valencia.</p>
+            <p class="product-desc" id="prod-desc-paella-valenciana">Pollo de corral, conejo, bajoqueta, garrofó y azafrán en hebra D.O. Valencia.</p>
             <div class="product-actions">
-              <span class="product-allergen">🌾 Sin Gluten</span>
+              <span class="product-allergen" id="prod-allergen-paella-valenciana">🌾 Sin Gluten</span>
               <div class="qty-stepper">
                 <button type="button" class="btn-step btn-minus" aria-label="Restar">-</button>
                 <span class="qty-number">0</span>
@@ -80,14 +97,14 @@
           </article>
 
           <!-- Producto 2: Paella Señorret -->
-          <article class="product-card" data-id="paella-senorret" data-name="Paella de Marisco del Señorret" data-price="22.00" data-cat="paellas">
+          <article class="product-card" data-id="paella-senorret" data-price="22.00" data-cat="paellas">
             <div class="product-header">
-              <h4 class="product-title">Paella de Marisco del Señorret</h4>
+              <h4 class="product-title" id="prod-title-paella-senorret">Paella de Marisco del Señorret</h4>
               <span class="product-price">22,00 €</span>
             </div>
-            <p class="product-desc">Todo pelado para disfrutar: gamba roja de Denia, sepia limpia y mejillón de roca.</p>
+            <p class="product-desc" id="prod-desc-paella-senorret">Todo pelado para disfrutar: gamba roja de Denia, sepia limpia y mejillón de roca.</p>
             <div class="product-actions">
-              <span class="product-allergen">🦐 Marisco</span>
+              <span class="product-allergen" id="prod-allergen-paella-senorret">🦐 Marisco</span>
               <div class="qty-stepper">
                 <button type="button" class="btn-step btn-minus" aria-label="Restar">-</button>
                 <span class="qty-number">0</span>
@@ -103,21 +120,21 @@
         <div class="category-header">
           <span class="cat-icon">🍷</span>
           <div class="cat-titles">
-            <h3 class="cat-title">Vinos & Bodega</h3>
-            <span class="cat-badge purple">SERVICIO DE SALA · PDA</span>
+            <h3 class="cat-title" id="cat-title-vinos">Vinos & Bodega</h3>
+            <span class="cat-badge purple" id="cat-badge-vinos">SERVICIO DE SALA · PDA</span>
           </div>
         </div>
 
         <div class="products-grid">
           <!-- Producto 3: Vino Tinto Rioja -->
-          <article class="product-card" data-id="vino-rioja" data-name="Vino Tinto D.O. Rioja Crianza" data-price="16.00" data-cat="vinos">
+          <article class="product-card" data-id="vino-rioja" data-price="16.00" data-cat="vinos">
             <div class="product-header">
-              <h4 class="product-title">Vino Tinto D.O. Rioja Crianza</h4>
+              <h4 class="product-title" id="prod-title-vino-rioja">Vino Tinto D.O. Rioja Crianza</h4>
               <span class="product-price">16,00 €</span>
             </div>
-            <p class="product-desc">Tempranillo crianza en barrica de roble francés. Notas a frutos rojos y especias.</p>
+            <p class="product-desc" id="prod-desc-vino-rioja">Tempranillo crianza en barrica de roble francés. Notas a frutos rojos y especias.</p>
             <div class="product-actions">
-              <span class="product-allergen">🍇 750 ml</span>
+              <span class="product-allergen" id="prod-allergen-vino-rioja">🍇 750 ml</span>
               <div class="qty-stepper">
                 <button type="button" class="btn-step btn-minus" aria-label="Restar">-</button>
                 <span class="qty-number">0</span>
@@ -127,14 +144,14 @@
           </article>
 
           <!-- Producto 4: Vino Blanco Rueda -->
-          <article class="product-card" data-id="vino-rueda" data-name="Vino Blanco D.O. Rueda Verdejo" data-price="14.00" data-cat="vinos">
+          <article class="product-card" data-id="vino-rueda" data-price="14.00" data-cat="vinos">
             <div class="product-header">
-              <h4 class="product-title">Vino Blanco D.O. Rueda Verdejo</h4>
+              <h4 class="product-title" id="prod-title-vino-rueda">Vino Blanco D.O. Rueda Verdejo</h4>
               <span class="product-price">14,00 €</span>
             </div>
-            <p class="product-desc">Verdejo monovarietal fresco y afrutado, servido en cubitera con hielo.</p>
+            <p class="product-desc" id="prod-desc-vino-rueda">Verdejo monovarietal fresco y afrutado, servido en cubitera con hielo.</p>
             <div class="product-actions">
-              <span class="product-allergen">🥂 750 ml</span>
+              <span class="product-allergen" id="prod-allergen-vino-rueda">🥂 750 ml</span>
               <div class="qty-stepper">
                 <button type="button" class="btn-step btn-minus" aria-label="Restar">-</button>
                 <span class="qty-number">0</span>
@@ -150,21 +167,21 @@
         <div class="category-header">
           <span class="cat-icon">💧</span>
           <div class="cat-titles">
-            <h3 class="cat-title">Aguas Minerales</h3>
-            <span class="cat-badge purple">SERVICIO DE SALA · PDA</span>
+            <h3 class="cat-title" id="cat-title-aguas">Aguas Minerales</h3>
+            <span class="cat-badge purple" id="cat-badge-aguas">SERVICIO DE SALA · PDA</span>
           </div>
         </div>
 
         <div class="products-grid">
           <!-- Producto 5: Agua Mineral -->
-          <article class="product-card" data-id="agua-mineral" data-name="Agua Mineral Natural 1L" data-price="3.00" data-cat="aguas">
+          <article class="product-card" data-id="agua-mineral" data-price="3.00" data-cat="aguas">
             <div class="product-header">
-              <h4 class="product-title">Agua Mineral Natural 1L</h4>
+              <h4 class="product-title" id="prod-title-agua-mineral">Agua Mineral Natural 1L</h4>
               <span class="product-price">3,00 €</span>
             </div>
-            <p class="product-desc">Agua de manantial servida en botella de vidrio frío.</p>
+            <p class="product-desc" id="prod-desc-agua-mineral">Agua de manantial servida en botella de vidrio frío.</p>
             <div class="product-actions">
-              <span class="product-allergen">💧 1 Litro</span>
+              <span class="product-allergen" id="prod-allergen-agua-mineral">💧 1 Litro</span>
               <div class="qty-stepper">
                 <button type="button" class="btn-step btn-minus" aria-label="Restar">-</button>
                 <span class="qty-number">0</span>
@@ -183,7 +200,7 @@
         <span class="order-total" id="order-total-price">0,00 €</span>
       </div>
       <button type="button" class="btn-submit-order" id="btn-submit-order" disabled>
-        <span>🚀 Enviar a Cocina</span>
+        <span id="btn-submit-label">🚀 Enviar a Cocina</span>
       </button>
     </footer>
 
@@ -191,16 +208,16 @@
     <div class="order-modal-backdrop hidden" id="order-modal">
       <div class="order-modal-card">
         <div class="modal-success-icon">🥘✨</div>
-        <h3 class="modal-title">¡Comanda Enviada a Cocina!</h3>
-        <p class="modal-text">Tu pedido ya está marchando en el KDS de cocina y las bebidas han sido asignadas al PDA del camarero.</p>
+        <h3 class="modal-title" id="modal-title-text">¡Comanda Enviada a Cocina!</h3>
+        <p class="modal-text" id="modal-desc-text">Tu pedido ya está marchando en el KDS de cocina y las bebidas han sido asignadas al PDA del camarero.</p>
         <div class="modal-info-box">
           <div class="info-row">
-            <span>Mesa:</span>
+            <span id="modal-table-label-tag">Mesa:</span>
             <strong id="modal-table-label">Mesa 04</strong>
           </div>
           <div class="info-row">
-            <span>Tiempo Estimado:</span>
-            <strong class="text-orange">~18-20 min</strong>
+            <span id="modal-time-label-tag">Tiempo Estimado:</span>
+            <strong class="text-orange" id="modal-time-val">~18-20 min</strong>
           </div>
         </div>
         <button type="button" class="btn-modal-close" id="btn-modal-close">Entendido</button>
@@ -208,8 +225,7 @@
     </div>
   </div>
 
-  <script src="carta.js?v=1.0.3"></script>
+  <script src="carta.js?v=1.0.4"></script>
 </body>
 
 </html>
-

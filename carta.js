@@ -1,6 +1,7 @@
 /**
  * FNX RESTAURANT — CARTA DIGITAL MÓVIL (carta.js)
  * Conexión en tiempo real con KDS y PDA a través de WhatAuth Socket.IO
+ * Soporte Multi-idioma (ES / EN) y Gestión de Rondas de Comanda
  */
 
 (function () {
@@ -17,6 +18,118 @@
   const currentTable = urlParams.get('table') || 'Mesa 04';
   const currentDinerName = urlParams.get('name') || '';
 
+  // Detección inicial de idioma: inglés por defecto para el mundo, español para navegadores de habla hispana
+  let currentLang = 'en';
+  const paramLang = (urlParams.get('lang') || '').toLowerCase();
+  if (paramLang === 'es' || paramLang === 'en') {
+    currentLang = paramLang;
+  } else {
+    const navLang = (navigator.language || navigator.userLanguage || '').toLowerCase();
+    currentLang = navLang.startsWith('es') ? 'es' : 'en';
+  }
+
+  // Diccionario I18N
+  const I18N = {
+    es: {
+      headerSub: 'Carta Digital en Vivo',
+      welcomeTag: 'MESA CONECTADA · WHATSAUTH',
+      welcomeGreetingDefault: '¡Hola! Bienvenido a {table} 🍽️✨',
+      welcomeGreetingNamed: '¡Hola, {name}! 🍽️✨',
+      welcomeDesc: 'Selecciona tus platos y bebidas. Cada cambio se sincroniza en directo con la cocina y el camarero.',
+      catPaellas: 'Paellas & Arroces',
+      badgePaellas: 'DIRECTO A COCINA · KDS',
+      catVinos: 'Vinos & Bodega',
+      badgeVinos: 'SERVICIO DE SALA · PDA',
+      catAguas: 'Aguas Minerales',
+      badgeAguas: 'SERVICIO DE SALA · PDA',
+      prodPaellaVal: {
+        title: 'Paella Valenciana Tradicional',
+        desc: 'Pollo de corral, conejo, bajoqueta, garrofó y azafrán en hebra D.O. Valencia.',
+        allergen: '🌾 Sin Gluten'
+      },
+      prodPaellaSen: {
+        title: 'Paella de Marisco del Señorret',
+        desc: 'Todo pelado para disfrutar: gamba roja de Denia, sepia limpia y mejillón de roca.',
+        allergen: '🦐 Marisco'
+      },
+      prodVinoRioja: {
+        title: 'Vino Tinto D.O. Rioja Crianza',
+        desc: 'Tempranillo crianza en barrica de roble francés. Notas a frutos rojos y especias.',
+        allergen: '🍇 750 ml'
+      },
+      prodVinoRueda: {
+        title: 'Vino Blanco D.O. Rueda Verdejo',
+        desc: 'Verdejo monovarietal fresco y afrutado, servido en cubitera con hielo.',
+        allergen: '🥂 750 ml'
+      },
+      prodAguaMin: {
+        title: 'Agua Mineral Natural 1L',
+        desc: 'Agua de manantial servida en botella de vidrio frío.',
+        allergen: '💧 1 Litro'
+      },
+      orderCountSingular: '1 plato seleccionado',
+      orderCountPlural: '{n} productos seleccionados',
+      orderCountEmpty: '0 platos seleccionados',
+      btnSubmit: '🚀 Enviar a Cocina',
+      roundTitle: 'Comanda enviada a cocina (Ronda {n})',
+      roundSubtitle: '¿Deseas pedir algo más? Selecciona nuevos platos o bebidas abajo.',
+      modalTitle: '¡Comanda Enviada a Cocina!',
+      modalDesc: 'Tu pedido ya está marchando en el KDS de cocina y las bebidas han sido asignadas al PDA del camarero.',
+      modalTableTag: 'Mesa:',
+      modalTimeTag: 'Tiempo Estimado:',
+      modalClose: 'Entendido'
+    },
+    en: {
+      headerSub: 'Live Digital Menu',
+      welcomeTag: 'TABLE CONNECTED · WHATSAUTH',
+      welcomeGreetingDefault: 'Hello! Welcome to {table} 🍽️✨',
+      welcomeGreetingNamed: 'Hello, {name}! 🍽️✨',
+      welcomeDesc: 'Select your dishes and drinks. Every update synchronizes live with the kitchen and waiter.',
+      catPaellas: 'Paellas & Rice Dishes',
+      badgePaellas: 'DIRECT TO KITCHEN · KDS',
+      catVinos: 'Wines & Cellar',
+      badgeVinos: 'FLOOR SERVICE · PDA',
+      catAguas: 'Mineral Waters',
+      badgeAguas: 'FLOOR SERVICE · PDA',
+      prodPaellaVal: {
+        title: 'Traditional Valencian Paella',
+        desc: 'Free-range chicken, rabbit, green beans, lima beans, and Valencian saffron.',
+        allergen: '🌾 Gluten-Free'
+      },
+      prodPaellaSen: {
+        title: 'Señorret Seafood Paella',
+        desc: 'Peeled for effortless dining: Denia red prawns, tender cuttlefish, and rock mussels.',
+        allergen: '🦐 Shellfish'
+      },
+      prodVinoRioja: {
+        title: 'Red Wine D.O. Rioja Crianza',
+        desc: 'Oak-aged Tempranillo. Rich red berry and spiced oak aromas.',
+        allergen: '🍇 750 ml'
+      },
+      prodVinoRueda: {
+        title: 'White Wine D.O. Rueda Verdejo',
+        desc: 'Fresh, aromatic single-variety Verdejo served chilled on ice.',
+        allergen: '🥂 750 ml'
+      },
+      prodAguaMin: {
+        title: 'Natural Spring Water 1L',
+        desc: 'Pure mountain spring water served in a chilled glass bottle.',
+        allergen: '💧 1 Liter'
+      },
+      orderCountSingular: '1 item selected',
+      orderCountPlural: '{n} items selected',
+      orderCountEmpty: '0 items selected',
+      btnSubmit: '🚀 Send to Kitchen',
+      roundTitle: 'Order sent to kitchen (Round {n})',
+      roundSubtitle: 'Would you like to order anything else? Select new dishes or drinks below.',
+      modalTitle: 'Order Sent to Kitchen!',
+      modalDesc: 'Your order is now on the kitchen KDS display and drinks have been routed to the waiter PDA.',
+      modalTableTag: 'Table:',
+      modalTimeTag: 'Estimated Time:',
+      modalClose: 'Got it'
+    }
+  };
+
   // Canal de difusión local para sincronización instantánea en el mismo navegador
   const broadcast = (typeof BroadcastChannel !== 'undefined')
     ? new BroadcastChannel('fnx_restaurant_orders')
@@ -24,6 +137,7 @@
 
   // Estado del pedido en el cliente
   const cart = {};
+  let currentRound = 1;
   let socket = null;
   let audioContext = null;
 
@@ -31,30 +145,133 @@
   // INICIALIZACIÓN
   // ========================================================
   window.addEventListener('DOMContentLoaded', () => {
-    initUI();
+    initLangSelector();
+    applyLanguage(currentLang);
     initSocket();
     initSteppers();
     initSubmitButton();
   });
 
   // ========================================================
-  // 1. INICIALIZACIÓN UI & SALUDO
+  // 1. SELECTOR Y APLICACIÓN DE IDIOMA
   // ========================================================
-  function initUI() {
+  function initLangSelector() {
+    const btnEs = document.getElementById('lang-btn-es');
+    const btnEn = document.getElementById('lang-btn-en');
+
+    btnEs?.addEventListener('click', () => {
+      applyLanguage('es');
+      playTapSound(500);
+    });
+
+    btnEn?.addEventListener('click', () => {
+      applyLanguage('en');
+      playTapSound(500);
+    });
+  }
+
+  function applyLanguage(lang) {
+    currentLang = lang;
+    const dict = I18N[lang] || I18N.en;
+
+    // Actualizar botones del selector
+    const btnEs = document.getElementById('lang-btn-es');
+    const btnEn = document.getElementById('lang-btn-en');
+    if (btnEs) btnEs.classList.toggle('active', lang === 'es');
+    if (btnEn) btnEn.classList.toggle('active', lang === 'en');
+
+    // Textos cabecera y mesa
     const tablePill = document.getElementById('mobile-table-name');
     const modalTableLabel = document.getElementById('modal-table-label');
+    const headerSub = document.getElementById('header-sub-text');
+    const welcomeTag = document.getElementById('welcome-tag-text');
     const greetingEl = document.getElementById('welcome-greeting');
+    const welcomeDesc = document.getElementById('welcome-desc-text');
 
-    if (tablePill) tablePill.textContent = currentTable;
-    if (modalTableLabel) modalTableLabel.textContent = currentTable;
+    const displayTable = currentTable;
+    if (tablePill) tablePill.textContent = displayTable;
+    if (modalTableLabel) modalTableLabel.textContent = displayTable;
+    if (headerSub) headerSub.textContent = dict.headerSub;
+    if (welcomeTag) welcomeTag.textContent = dict.welcomeTag;
+    if (welcomeDesc) welcomeDesc.textContent = dict.welcomeDesc;
 
     if (greetingEl) {
       if (currentDinerName) {
-        greetingEl.textContent = `¡Hola, ${currentDinerName}! 🍽️✨`;
+        greetingEl.textContent = dict.welcomeGreetingNamed.replace('{name}', currentDinerName);
       } else {
-        greetingEl.textContent = `¡Hola! Bienvenido a ${currentTable} 🍽️✨`;
+        greetingEl.textContent = dict.welcomeGreetingDefault.replace('{table}', displayTable);
       }
     }
+
+    // Categorías
+    const catTitlePaellas = document.getElementById('cat-title-paellas');
+    const catBadgePaellas = document.getElementById('cat-badge-paellas');
+    const catTitleVinos = document.getElementById('cat-title-vinos');
+    const catBadgeVinos = document.getElementById('cat-badge-vinos');
+    const catTitleAguas = document.getElementById('cat-title-aguas');
+    const catBadgeAguas = document.getElementById('cat-badge-aguas');
+
+    if (catTitlePaellas) catTitlePaellas.textContent = dict.catPaellas;
+    if (catBadgePaellas) catBadgePaellas.textContent = dict.badgePaellas;
+    if (catTitleVinos) catTitleVinos.textContent = dict.catVinos;
+    if (catBadgeVinos) catBadgeVinos.textContent = dict.badgeVinos;
+    if (catTitleAguas) catTitleAguas.textContent = dict.catAguas;
+    if (catBadgeAguas) catBadgeAguas.textContent = dict.badgeAguas;
+
+    // Productos
+    applyProductTexts('paella-valenciana', dict.prodPaellaVal);
+    applyProductTexts('paella-senorret', dict.prodPaellaSen);
+    applyProductTexts('vino-rioja', dict.prodVinoRioja);
+    applyProductTexts('vino-rueda', dict.prodVinoRueda);
+    applyProductTexts('agua-mineral', dict.prodAguaMin);
+
+    // Botón de comanda
+    const btnSubmitLabel = document.getElementById('btn-submit-label');
+    if (btnSubmitLabel) btnSubmitLabel.textContent = dict.btnSubmit;
+
+    // Modal
+    const modalTitle = document.getElementById('modal-title-text');
+    const modalDesc = document.getElementById('modal-desc-text');
+    const modalTableTag = document.getElementById('modal-table-label-tag');
+    const modalTimeTag = document.getElementById('modal-time-label-tag');
+    const btnCloseModal = document.getElementById('btn-modal-close');
+
+    if (modalTitle) modalTitle.textContent = dict.modalTitle;
+    if (modalDesc) modalDesc.textContent = dict.modalDesc;
+    if (modalTableTag) modalTableTag.textContent = dict.modalTableTag;
+    if (modalTimeTag) modalTimeTag.textContent = dict.modalTimeTag;
+    if (btnCloseModal) btnCloseModal.textContent = dict.modalClose;
+
+    // Banner de ronda (si está visible)
+    updateRoundBannerText();
+    updateCartTotal();
+  }
+
+  function applyProductTexts(id, pDict) {
+    const titleEl = document.getElementById(`prod-title-${id}`);
+    const descEl = document.getElementById(`prod-desc-${id}`);
+    const allergenEl = document.getElementById(`prod-allergen-${id}`);
+
+    if (titleEl) titleEl.textContent = pDict.title;
+    if (descEl) descEl.textContent = pDict.desc;
+    if (allergenEl) allergenEl.textContent = pDict.allergen;
+
+    if (cart[id]) {
+      cart[id].name = pDict.title;
+    }
+  }
+
+  function updateRoundBannerText() {
+    const banner = document.getElementById('order-round-banner');
+    if (!banner || banner.classList.contains('hidden')) return;
+
+    const dict = I18N[currentLang] || I18N.en;
+    const titleEl = document.getElementById('round-badge-title');
+    const subEl = document.getElementById('round-badge-subtitle');
+    const completedRound = Math.max(1, currentRound - 1);
+
+    if (titleEl) titleEl.textContent = dict.roundTitle.replace('{n}', completedRound);
+    if (subEl) subEl.textContent = dict.roundSubtitle;
   }
 
   // ========================================================
@@ -69,7 +286,6 @@
 
       socket.on('connect', () => {
         console.log('[Carta Móvil] Conectado a socket:', socket.id);
-        // Suscribirse a la sala de la mesa y de la sesión
         socket.emit('subscribe_table', { table: currentTable, domain: CARTA_CONFIG.domain });
         if (currentSessionId && currentSessionId !== 'live') {
           socket.emit('join_qr_session', { sessionId: currentSessionId });
@@ -79,7 +295,8 @@
       socket.on('qr_verified', (data) => {
         const name = data?.user?.name || data?.senderName || 'Comensal';
         const greetingEl = document.getElementById('welcome-greeting');
-        if (greetingEl) greetingEl.textContent = `¡Hola, ${name}! 🍽️✨`;
+        const dict = I18N[currentLang] || I18N.en;
+        if (greetingEl) greetingEl.textContent = dict.welcomeGreetingNamed.replace('{name}', name);
       });
     } catch (e) {
       console.warn('[Carta Móvil] Error conectando socket:', e);
@@ -94,14 +311,15 @@
 
     cards.forEach((card) => {
       const id = card.dataset.id;
-      const name = card.dataset.name;
       const price = parseFloat(card.dataset.price || '0');
       const cat = card.dataset.cat;
+      const titleEl = card.querySelector('.product-title');
+      const name = titleEl ? titleEl.textContent.trim() : id;
       const qtyNumber = card.querySelector('.qty-number');
       const btnPlus = card.querySelector('.btn-plus');
       const btnMinus = card.querySelector('.btn-minus');
 
-      cart[id] = { name, price, category: cat, qty: 0 };
+      cart[id] = { id, name, price, category: cat, qty: 0 };
 
       btnPlus?.addEventListener('click', () => {
         cart[id].qty++;
@@ -110,15 +328,17 @@
         playTapSound(600);
         updateCartTotal();
 
-        // Emitir adición en tiempo real a la consola de escritorio (KDS & PDA)
+        // Emitir adición en tiempo real (aviso borrador para KDS & PDA)
         emitItemToDesktop({
           id,
-          name,
+          name: cart[id].name,
           category: cat,
           price,
           qty: 1,
+          round: currentRound,
           table: currentTable,
-          sessionId: currentSessionId
+          sessionId: currentSessionId,
+          dinerName: currentDinerName || ''
         });
       });
 
@@ -142,6 +362,7 @@
   function updateCartTotal() {
     let totalItems = 0;
     let totalPrice = 0;
+    const dict = I18N[currentLang] || I18N.en;
 
     Object.values(cart).forEach((item) => {
       totalItems += item.qty;
@@ -153,10 +374,16 @@
     const submitBtn = document.getElementById('btn-submit-order');
 
     if (countEl) {
-      countEl.textContent = totalItems === 1 ? '1 plato seleccionado' : `${totalItems} productos seleccionados`;
+      if (totalItems === 0) {
+        countEl.textContent = dict.orderCountEmpty;
+      } else if (totalItems === 1) {
+        countEl.textContent = dict.orderCountSingular;
+      } else {
+        countEl.textContent = dict.orderCountPlural.replace('{n}', totalItems);
+      }
     }
     if (totalEl) {
-      totalEl.textContent = totalPrice.toLocaleString('es-ES', {
+      totalEl.textContent = totalPrice.toLocaleString(currentLang === 'es' ? 'es-ES' : 'en-US', {
         style: 'currency',
         currency: 'EUR'
       });
@@ -168,12 +395,13 @@
   }
 
   // ========================================================
-  // 5. ENVÍO DE COMANDA A COCINA Y SALA
+  // 5. ENVÍO DE COMANDA A COCINA Y RESET A CERO
   // ========================================================
   function initSubmitButton() {
     const submitBtn = document.getElementById('btn-submit-order');
     const modal = document.getElementById('order-modal');
     const btnCloseModal = document.getElementById('btn-modal-close');
+    const roundBanner = document.getElementById('order-round-banner');
 
     submitBtn?.addEventListener('click', () => {
       let foodCount = 0;
@@ -182,7 +410,13 @@
 
       Object.values(cart).forEach((item) => {
         if (item.qty > 0) {
-          orderItems.push(item);
+          orderItems.push({
+            id: item.id,
+            name: item.name,
+            category: item.category,
+            price: item.price,
+            qty: item.qty
+          });
           if (item.category === 'paellas') {
             foodCount += item.qty;
           } else {
@@ -195,17 +429,19 @@
 
       playTapSound(800, 'triangle', 0.35);
 
-      // Emitir comanda finalizada a KDS y PDA
+      // Payload oficial de comanda
       const orderPayload = {
         table: currentTable,
         sessionId: currentSessionId,
         dinerName: currentDinerName || '',
+        round: currentRound,
         items: orderItems,
         foodCount,
         drinkCount,
         timestamp: new Date().toISOString()
       };
 
+      // 1. Emitir comanda finalizada a KDS y PDA
       if (socket && socket.connected) {
         socket.emit('order_submitted', orderPayload);
       }
@@ -213,13 +449,43 @@
         broadcast.postMessage({ type: 'order_submitted', data: orderPayload });
       }
 
-      // Mostrar modal de éxito
+      // 2. Incrementar ronda para próximos pedidos
+      currentRound++;
+
+      // 3. Resetear contadores de la carta a 0
+      resetCartCounters();
+
+      // 4. Mostrar banner de ronda activa
+      if (roundBanner) {
+        roundBanner.classList.remove('hidden');
+        updateRoundBannerText();
+      }
+
+      // 5. Mostrar modal de éxito
       if (modal) modal.classList.remove('hidden');
     });
 
     btnCloseModal?.addEventListener('click', () => {
       if (modal) modal.classList.add('hidden');
     });
+  }
+
+  function resetCartCounters() {
+    // Poner cantidades a 0 en el modelo
+    Object.keys(cart).forEach((id) => {
+      cart[id].qty = 0;
+    });
+
+    // Poner contadores a 0 en el DOM
+    const cards = document.querySelectorAll('.product-card');
+    cards.forEach((card) => {
+      card.classList.remove('has-qty');
+      const qtyNumber = card.querySelector('.qty-number');
+      if (qtyNumber) qtyNumber.textContent = '0';
+    });
+
+    // Actualizar barra de totales
+    updateCartTotal();
   }
 
   // ========================================================
@@ -258,4 +524,3 @@
     } catch (_) {}
   }
 })();
-
