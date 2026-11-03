@@ -1,0 +1,1130 @@
+/* ========================================================
+   FNX RESTAURANT — ESTILOS CONSOLA KDS, PDA & POSA-QR
+   Paleta: Púrpura Imperial (#9B51E0), Magenta Neón (#E056FD),
+           Azul Cobalto (#607AFE) y Naranja Fuego (#FF7A00)
+   ======================================================== */
+
+:root {
+  --bg-dark: #0a0e1a;
+  --bg-card: rgba(18, 24, 42, 0.75);
+  --bg-card-hover: rgba(24, 32, 56, 0.85);
+  --text-main: #f3f4f6;
+  --text-muted: #9ca3af;
+  --brand-purple: #9B51E0;
+  --brand-magenta: #E056FD;
+  --brand-cobalt: #607AFE;
+  --brand-pink: #F07399;
+  --accent-orange: #FF7A00;
+  --accent-green: #10B981;
+  --border-glass: rgba(155, 81, 224, 0.25);
+  --border-light: rgba(255, 255, 255, 0.1);
+  --font-sans: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  --font-serif: 'Playfair Display', serif;
+  --font-mono: 'Space Mono', monospace;
+  --radius-lg: 18px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+  --shadow-elevated: 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(155, 81, 224, 0.15);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  font-family: var(--font-sans);
+  background: var(--bg-dark);
+  color: var(--text-main);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ========================================================
+   FONDO DE VÍDEO CON DESENFOQUE & OVERLAY
+   ======================================================== */
+.video-bg-container {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -2;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.bg-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.65) saturate(1.1);
+  transition: opacity 1s ease;
+}
+
+.video-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 60% 40%, rgba(13, 18, 32, 0.72) 0%, rgba(10, 14, 26, 0.88) 70%, rgba(6, 8, 16, 0.96) 100%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.video-ambient-glow {
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(circle at 20% 30%, rgba(155, 81, 224, 0.18) 0%, transparent 45%),
+    radial-gradient(circle at 80% 80%, rgba(224, 86, 253, 0.14) 0%, transparent 50%),
+    radial-gradient(circle at 50% 10%, rgba(96, 122, 254, 0.12) 0%, transparent 40%);
+  pointer-events: none;
+}
+
+/* ========================================================
+   CABECERA BRAND
+   ======================================================== */
+.app-header {
+  height: 72px;
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(14, 19, 34, 0.82);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-bottom: 1px solid var(--border-glass);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-left .brand-badge {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.brand-logo {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 12px rgba(224, 86, 253, 0.5));
+  transition: transform 0.25s ease;
+}
+
+.brand-logo:hover {
+  transform: scale(1.08) rotate(2deg);
+}
+
+.brand-texts .brand-title {
+  font-family: var(--font-serif);
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+  color: #ffffff;
+}
+
+.brand-accent {
+  background: linear-gradient(135deg, var(--brand-cobalt), var(--brand-purple), var(--brand-magenta));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-style: italic;
+  font-weight: 600;
+}
+
+.brand-tagline {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* Centro: Chip de Servicio y Selector de Mesas */
+.header-center {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.service-live-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #34d399;
+}
+
+.live-clock {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: #ffffff;
+}
+
+.table-switcher {
+  display: flex;
+  background: rgba(20, 27, 48, 0.8);
+  border: 1px solid var(--border-glass);
+  border-radius: 999px;
+  padding: 4px;
+  gap: 4px;
+}
+
+.table-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.table-tab-btn .tab-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  transition: all 0.2s ease;
+}
+
+.table-tab-btn .tab-zone {
+  font-size: 0.68rem;
+  opacity: 0.65;
+}
+
+.table-tab-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.table-tab-btn.active {
+  background: linear-gradient(135deg, rgba(155, 81, 224, 0.5), rgba(224, 86, 253, 0.4));
+  color: #ffffff;
+  border: 1px solid rgba(224, 86, 253, 0.6);
+  box-shadow: 0 2px 10px rgba(155, 81, 224, 0.35);
+}
+
+.table-tab-btn.active .tab-dot {
+  background: #34d399;
+  box-shadow: 0 0 6px #34d399;
+}
+
+/* Derecha: Herramientas y CTA Carta Móvil */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-tool-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.header-tool-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.header-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, var(--brand-purple), var(--brand-magenta));
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 4px 16px rgba(155, 81, 224, 0.4);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.header-cta-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(224, 86, 253, 0.55);
+}
+
+/* ========================================================
+   GRID PRINCIPAL (COLUMNA IZQ + COLUMNA DER)
+   ======================================================== */
+.main-dashboard {
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 24px 28px 48px;
+  display: grid;
+  grid-template-columns: 430px 1fr;
+  gap: 28px;
+  align-items: start;
+}
+
+/* ========================================================
+   COLUMNA IZQUIERDA: POSA-QR FÍSICO REALISTA
+   ======================================================== */
+.left-section {
+  position: sticky;
+  top: 96px;
+}
+
+.table-stand-container {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+/* Atril Posa-QR de Acrílico y Madera */
+.table-stand-card {
+  position: relative;
+  width: 100%;
+  background: linear-gradient(165deg, rgba(30, 38, 64, 0.88) 0%, rgba(18, 23, 40, 0.94) 100%);
+  border: 1.5px solid rgba(255, 255, 255, 0.18);
+  border-radius: 24px;
+  padding: 24px 22px 18px;
+  box-shadow: 
+    0 24px 48px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(155, 81, 224, 0.25),
+    inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+}
+
+.table-stand-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 
+    0 28px 56px rgba(0, 0, 0, 0.7),
+    0 0 32px rgba(155, 81, 224, 0.3);
+}
+
+/* Clip Metálico Dorado/Plateado Superior */
+.stand-metallic-clip {
+  position: absolute;
+  top: -8px;
+  width: 72px;
+  height: 14px;
+  background: linear-gradient(180deg, #ffd700 0%, #cca01d 50%, #997814 100%);
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.6);
+}
+
+/* Cabecera del atril */
+.stand-header {
+  text-align: center;
+  margin-top: 4px;
+  margin-bottom: 14px;
+}
+
+.stand-brand-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--brand-magenta);
+  text-transform: uppercase;
+}
+
+.stand-logo-mini {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+.stand-table-badge {
+  font-family: var(--font-serif);
+  font-size: 1.9rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+.stand-table-zone {
+  font-size: 0.8rem;
+  color: var(--brand-cobalt);
+  font-weight: 600;
+}
+
+/* Marco del Código QR con halo */
+.stand-qr-wrapper {
+  position: relative;
+  width: 240px;
+  height: 240px;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 
+    0 12px 30px rgba(0, 0, 0, 0.35),
+    0 0 0 3px rgba(155, 81, 224, 0.45);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.stand-qr-box {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stand-qr-box svg,
+.stand-qr-box canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+/* Láser de Escaneo Animado */
+.qr-laser-scanner {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--brand-magenta), #ffffff, var(--brand-magenta), transparent);
+  box-shadow: 0 0 12px var(--brand-magenta), 0 0 20px var(--brand-purple);
+  animation: laserScan 2.4s ease-in-out infinite alternate;
+  z-index: 5;
+  pointer-events: none;
+}
+
+@keyframes laserScan {
+  0% { top: 6%; opacity: 0.2; }
+  25% { opacity: 0.9; }
+  75% { opacity: 0.9; }
+  100% { top: 92%; opacity: 0.2; }
+}
+
+/* Spinner de Carga de QR */
+.qr-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(155, 81, 224, 0.2);
+  border-top-color: var(--brand-magenta);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Estado del Escaneo */
+.stand-status-box {
+  width: 100%;
+  margin-bottom: 14px;
+}
+
+.status-waiting {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.pulse-beacon {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.pulse-beacon.purple {
+  background: var(--brand-magenta);
+  box-shadow: 0 0 0 0 rgba(224, 86, 253, 0.7);
+  animation: beaconPurple 1.6s infinite;
+}
+
+.pulse-beacon.green {
+  background: #10B981;
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  animation: beaconGreen 1.6s infinite;
+}
+
+@keyframes beaconPurple {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(224, 86, 253, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(224, 86, 253, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(224, 86, 253, 0); }
+}
+
+@keyframes beaconGreen {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+/* Tarjeta Verificada de Comensal */
+.status-verified {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.16) 0%, rgba(13, 23, 38, 0.8) 100%);
+  border: 1.5px solid rgba(16, 185, 129, 0.5);
+  border-radius: var(--radius-md);
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.2);
+  animation: popIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.verified-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.verified-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.verified-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.74rem;
+  color: #34d399;
+}
+
+.verified-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  background: #10B981;
+  color: #0b1e15;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.verified-name {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.verified-phone {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: #a7f3d0;
+  margin-top: 1px;
+}
+
+/* Botón Directo WhatsApp */
+.stand-actions {
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.btn-stand-wa {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #25D366;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-md);
+  color: #092c15;
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-decoration: none;
+  box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35);
+  transition: all 0.2s ease;
+}
+
+.btn-stand-wa:hover {
+  background: #22bf5b;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(37, 211, 102, 0.45);
+}
+
+/* Base de Madera Noble */
+.stand-wooden-base {
+  width: calc(100% + 14px);
+  margin-left: -7px;
+  margin-right: -7px;
+  height: 28px;
+  background: linear-gradient(180deg, #3d271d 0%, #291a13 50%, #1a100b 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0 0 16px 16px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wood-engraving {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 1.2px;
+  color: #cca484;
+  opacity: 0.75;
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.8);
+}
+
+/* ========================================================
+   COLUMNA DERECHA: KDS (COCINA) + PDA (CAMARERO)
+   ======================================================== */
+.right-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.console-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  box-shadow: var(--shadow-elevated);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  transition: border-color 0.2s ease;
+}
+
+.console-card:hover {
+  border-color: rgba(224, 86, 253, 0.4);
+}
+
+.console-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 18px;
+}
+
+.panel-identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.panel-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+
+.panel-icon-box.orange {
+  background: rgba(255, 122, 0, 0.15);
+  border: 1px solid rgba(255, 122, 0, 0.4);
+  box-shadow: 0 0 16px rgba(255, 122, 0, 0.2);
+}
+
+.panel-icon-box.purple {
+  background: rgba(155, 81, 224, 0.15);
+  border: 1px solid rgba(155, 81, 224, 0.4);
+  box-shadow: 0 0 16px rgba(155, 81, 224, 0.2);
+}
+
+.panel-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.panel-sub-tag {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+}
+
+.panel-desc {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.panel-metrics .metric-pill {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 6px 14px;
+  background: rgba(255, 122, 0, 0.12);
+  border: 1px solid rgba(255, 122, 0, 0.35);
+  border-radius: 999px;
+  color: #ffaa5b;
+}
+
+.panel-metrics .metric-pill.purple {
+  background: rgba(155, 81, 224, 0.12);
+  border-color: rgba(155, 81, 224, 0.35);
+  color: #d8b4fe;
+}
+
+.metric-num {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.metric-lbl {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* ========================================================
+   TICKETS KDS (PANTALLA DE MARCHAS DE COCINA)
+   ======================================================== */
+.kds-tickets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 18px;
+}
+
+.kds-ticket-card {
+  background: rgba(26, 33, 56, 0.85);
+  border: 1px solid rgba(255, 122, 0, 0.35);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+  animation: popIn 0.35s ease;
+}
+
+.kds-ticket-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-orange);
+}
+
+.kds-ticket-card.ready {
+  border-color: rgba(16, 185, 129, 0.6);
+  background: rgba(18, 42, 35, 0.85);
+}
+
+.ticket-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.12);
+}
+
+.ticket-table-tag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.badge-table {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 800;
+  background: var(--accent-orange);
+  color: #000000;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.ticket-diner {
+  font-size: 0.8rem;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.ticket-timer-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: #ffaa5b;
+}
+
+.timer-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ffaa5b;
+  animation: beaconOrange 1.4s infinite;
+}
+
+@keyframes beaconOrange {
+  0% { opacity: 0.4; }
+  50% { opacity: 1; }
+  100% { opacity: 0.4; }
+}
+
+.ticket-items-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ticket-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-sm);
+}
+
+.item-qty {
+  font-family: var(--font-mono);
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--accent-orange);
+  min-width: 24px;
+}
+
+.item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.item-name {
+  display: block;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.item-note {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.item-status-pill {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+.item-status-pill.cooking {
+  background: rgba(255, 122, 0, 0.2);
+  color: #ffaa5b;
+  border: 1px solid rgba(255, 122, 0, 0.4);
+}
+
+.item-status-pill.done {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.ticket-footer {
+  margin-top: 4px;
+}
+
+.btn-kds-action {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.btn-ready {
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+}
+
+.btn-ready:hover {
+  background: #10B981;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.5);
+}
+
+/* ========================================================
+   PDA CAMARERO (COMANDERO DE SALA Y BEBIDAS)
+   ======================================================== */
+.pda-tickets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 18px;
+}
+
+.pda-ticket-card {
+  background: rgba(26, 33, 56, 0.85);
+  border: 1px solid rgba(155, 81, 224, 0.35);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: popIn 0.35s ease;
+}
+
+.pda-ticket-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.12);
+}
+
+.pda-table-badge {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 800;
+  background: rgba(155, 81, 224, 0.25);
+  color: var(--brand-magenta);
+  border: 1px solid rgba(155, 81, 224, 0.4);
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.pda-diner-name {
+  font-size: 0.8rem;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.pda-drinks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pda-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+}
+
+.pda-item-row.served {
+  opacity: 0.45;
+  text-decoration: line-through;
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.pda-item-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pda-qty {
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--brand-magenta);
+}
+
+.pda-icon {
+  font-size: 1.1rem;
+}
+
+.pda-label {
+  font-size: 0.84rem;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.btn-pda-serve {
+  padding: 5px 10px;
+  background: rgba(155, 81, 224, 0.2);
+  border: 1px solid rgba(155, 81, 224, 0.45);
+  border-radius: 6px;
+  color: #d8b4fe;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-pda-serve:hover {
+  background: var(--brand-purple);
+  color: #ffffff;
+}
+
+/* Aviso de cocina en PDA */
+.pda-kitchen-alert {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, rgba(255, 122, 0, 0.2) 0%, rgba(20, 27, 48, 0.9) 100%);
+  border: 1.5px solid var(--accent-orange);
+  border-radius: var(--radius-sm);
+  animation: pulseAlert 1.5s infinite;
+}
+
+@keyframes pulseAlert {
+  0% { box-shadow: 0 0 0 0 rgba(255, 122, 0, 0.5); }
+  70% { box-shadow: 0 0 0 8px rgba(255, 122, 0, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 122, 0, 0); }
+}
+
+.alert-bell {
+  font-size: 1.3rem;
+  animation: bellShake 1.2s infinite ease-in-out;
+}
+
+@keyframes bellShake {
+  0%, 100% { transform: rotate(0deg); }
+  20%, 60% { transform: rotate(14deg); }
+  40%, 80% { transform: rotate(-14deg); }
+}
+
+.alert-content {
+  flex: 1;
+}
+
+.alert-content strong {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--accent-orange);
+}
+
+.alert-content p {
+  font-size: 0.74rem;
+  color: #ffffff;
+  margin-top: 1px;
+}
+
+.btn-pda-delivered {
+  padding: 6px 12px;
+  background: var(--accent-orange);
+  border: none;
+  border-radius: 6px;
+  color: #000000;
+  font-size: 0.74rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* ========================================================
+   RESPONSIVE DESIGN (TABLETS & MÓVILES)
+   ======================================================== */
+@media (max-width: 1080px) {
+  .main-dashboard {
+    grid-template-columns: 1fr;
+  }
+
+  .left-section {
+    position: static;
+  }
+
+  .table-stand-card {
+    max-width: 480px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .app-header {
+    height: auto;
+    padding: 12px 16px;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .header-center {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .main-dashboard {
+    padding: 16px 12px 32px;
+  }
+
+  .kds-tickets-grid,
+  .pda-tickets-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.hidden {
+  display: none !important;
+}

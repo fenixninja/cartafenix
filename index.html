@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FNX Restaurant — Smart Table & KDS Experience (WhatAuth)</title>
+  <meta name="description" content="Sistema de restauración inteligente con Posa-QR de mesa, KDS de cocina en tiempo real y PDA para camareros impulsado por WhatAuth Pixel." />
+
+  <!-- Favicon & Icons -->
+  <link rel="icon" type="image/png" sizes="96x96" href="src/img/favicon-96x96.png" />
+  <link rel="icon" type="image/x-icon" href="src/img/favicon.ico" />
+  <meta name="theme-color" content="#9B51E0" />
+
+  <!-- Google Fonts: Plus Jakarta Sans & Playfair Display -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+
+  <!-- Estilos Consola de Restaurante -->
+  <link rel="stylesheet" href="style.css?v=1.0.0" />
+
+  <!-- Socket.IO & QRCodeStyling -->
+  <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+  <script src="https://unpkg.com/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
+</head>
+
+<body>
+  <!-- ========================================================
+       FONDO DE VÍDEO EN BUCLE (ATMÓSFERA GASTRONÓMICA)
+       ======================================================== -->
+  <div class="video-bg-container" aria-hidden="true" role="none">
+    <video id="bg-video-player" class="bg-video" muted playsinline autoplay loop preload="auto"
+      src="src/video/chef_cooking.mp4"></video>
+    <div class="video-overlay"></div>
+    <div class="video-ambient-glow"></div>
+  </div>
+
+  <!-- ========================================================
+       CABECERA BRAND & ESTADO DE SALA
+       ======================================================== -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="brand-badge">
+        <img src="src/img/logo.png" alt="FNX Restaurant Logo" class="brand-logo" />
+        <div class="brand-texts">
+          <h1 class="brand-title">FNX <span class="brand-accent">Restaurant</span></h1>
+          <p class="brand-tagline">Smart Table · KDS & PDA Live System</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Indicador Central de Servicio -->
+    <div class="header-center">
+      <div class="service-live-chip">
+        <span class="pulse-beacon green"></span>
+        <span class="live-label">SERVICIO ACTIVO</span>
+        <span class="chip-divider">·</span>
+        <span id="live-clock" class="live-clock">14:30:00</span>
+      </div>
+
+      <!-- Selector Rápido de Mesas en Demo -->
+      <div class="table-switcher" role="tablist" aria-label="Seleccionar mesa">
+        <button type="button" class="table-tab-btn" data-table="Mesa 01" data-zone="Salón Interior" data-pin="N-101">
+          <span class="tab-dot"></span>
+          <span class="tab-name">Mesa 01</span>
+          <span class="tab-zone">Salón</span>
+        </button>
+        <button type="button" class="table-tab-btn active" data-table="Mesa 04" data-zone="Terraza Principal" data-pin="N-401">
+          <span class="tab-dot"></span>
+          <span class="tab-name">Mesa 04</span>
+          <span class="tab-zone">Terraza</span>
+        </button>
+        <button type="button" class="table-tab-btn" data-table="Mesa 07" data-zone="Reservado VIP" data-pin="N-701">
+          <span class="tab-dot"></span>
+          <span class="tab-name">Mesa 07</span>
+          <span class="tab-zone">VIP</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Acciones de Cabecera -->
+    <div class="header-right">
+      <button type="button" id="btn-sound-toggle" class="header-tool-btn" title="Activar/Silenciar avisos sonoros">
+        <span class="tool-icon" id="sound-icon">🔔</span>
+        <span class="tool-label" id="sound-label">Sonido ON</span>
+      </button>
+
+      <a id="btn-open-mobile-menu" class="header-cta-btn" href="carta.html?table=Mesa+04" target="_blank" rel="noopener noreferrer">
+        <span class="cta-icon">📱</span>
+        <span>Abrir Carta Móvil</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- ========================================================
+       GRID PRINCIPAL (POSA-QR IZQUIERDA | KDS + PDA DERECHA)
+       ======================================================== -->
+  <main class="main-dashboard">
+    <!-- COLUMNA IZQUIERDA: POSA-QR FÍSICO DE MESA -->
+    <section class="left-section" aria-label="Posa-QR de Mesa">
+      <div class="table-stand-container">
+        <!-- Mesa y Superficie de Mármol/Madera -->
+        <div class="table-surface-backdrop"></div>
+
+        <!-- Soporte Posa-QR Físico de Acrílico y Madera -->
+        <div class="table-stand-card" id="table-stand">
+          <!-- Clip metálico superior del atril -->
+          <div class="stand-metallic-clip"></div>
+
+          <!-- Cabecera del atril de mesa -->
+          <div class="stand-header">
+            <div class="stand-brand-mini">
+              <img src="src/img/logo.png" alt="FNX" class="stand-logo-mini" />
+              <span>FNX RESTAURANT</span>
+            </div>
+            <div class="stand-table-badge" id="stand-table-title">MESA 04</div>
+            <p class="stand-table-zone" id="stand-zone-title">Terraza Principal</p>
+          </div>
+
+          <!-- Marco del Código QR Pixel con halo y escáner -->
+          <div class="stand-qr-wrapper">
+            <div class="qr-laser-scanner"></div>
+            <div id="stand-qr-target" class="stand-qr-box">
+              <div class="qr-spinner"></div>
+            </div>
+          </div>
+
+          <!-- Estado del Escaneo y comensal verificado -->
+          <div class="stand-status-box" id="stand-status-box">
+            <div class="status-waiting" id="status-waiting">
+              <span class="pulse-beacon purple"></span>
+              <span class="status-text">Escanea con WhatsApp para ver la carta y pedir</span>
+            </div>
+
+            <div class="status-verified hidden" id="status-verified">
+              <div class="verified-avatar">👤</div>
+              <div class="verified-details">
+                <div class="verified-title">
+                  <span>¡Mesa Conectada!</span>
+                  <span class="verified-badge">✓ VERIFICADO</span>
+                </div>
+                <div class="verified-name" id="verified-customer-name">Carlos Rivas</div>
+                <div class="verified-phone" id="verified-customer-phone">🔒 +34 ••• •• 121</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Acciones Rápidas del Soporte -->
+          <div class="stand-actions">
+            <a id="btn-direct-wa" class="btn-stand-wa" href="#" target="_blank" rel="noopener noreferrer">
+              <span class="wa-bubble-icon">💬</span>
+              <span>Abrir en WhatsApp</span>
+            </a>
+          </div>
+
+          <!-- Pie del soporte: Madera Noble grabada -->
+          <div class="stand-wooden-base">
+            <span class="wood-engraving">FNX SMART TABLE · WHATSAUTH VERIFIED</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- COLUMNA DERECHA: KDS (COCINA) + PDA (CAMARERO) -->
+    <section class="right-section" aria-label="Sistemas de Cocina y Sala">
+      <!-- 1. PANTALLA SUPERIOR: KDS COCINA (Kitchen Display System) -->
+      <div class="kds-panel console-card" id="kds-panel">
+        <div class="console-card-header kds-header">
+          <div class="panel-identity">
+            <div class="panel-icon-box orange">👨‍🍳</div>
+            <div class="panel-heading">
+              <h2 class="panel-title">KDS Cocina <span class="panel-sub-tag">PANTALLA DE MARCHAS</span></h2>
+              <p class="panel-desc">Comandas de paellas y arroces en tiempo real</p>
+            </div>
+          </div>
+
+          <div class="panel-metrics">
+            <div class="metric-pill">
+              <span class="metric-num" id="kds-count">2</span>
+              <span class="metric-lbl">EN FUEGO</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lista de Comandas KDS (Tarjetas Kanban de cocina) -->
+        <div class="kds-tickets-grid" id="kds-tickets-container">
+          <!-- Ticket de Paellas (precargado + reactivo) -->
+          <article class="kds-ticket-card" id="ticket-kds-04">
+            <div class="ticket-header">
+              <div class="ticket-table-tag">
+                <span class="badge-table">MESA 04</span>
+                <span class="ticket-diner" id="kds-diner-04">Comensal: Pendiente...</span>
+              </div>
+              <div class="ticket-timer-badge">
+                <span class="timer-dot"></span>
+                <span class="timer-digits" id="timer-kds-04">00:00</span>
+              </div>
+            </div>
+
+            <div class="ticket-body">
+              <ul class="ticket-items-list" id="kds-items-04">
+                <li class="ticket-item">
+                  <span class="item-qty">1x</span>
+                  <div class="item-info">
+                    <span class="item-name">Paella Valenciana Tradicional</span>
+                    <span class="item-note">Pollo, conejo, bajoqueta y garrofó</span>
+                  </div>
+                  <span class="item-status-pill cooking">Fuego Activo</span>
+                </li>
+                <li class="ticket-item">
+                  <span class="item-qty">1x</span>
+                  <div class="item-info">
+                    <span class="item-name">Paella de Marisco del Señorret</span>
+                    <span class="item-note">Todo pelado · Gamba roja y sepia</span>
+                  </div>
+                  <span class="item-status-pill cooking">Fuego Activo</span>
+                </li>
+              </ul>
+            </div>
+
+            <div class="ticket-footer">
+              <button type="button" class="btn-kds-action btn-ready" onclick="markDishReady('Mesa 04')">
+                <span>🍽️ Marcar Listo para Servir</span>
+              </button>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <!-- 2. PANTALLA INFERIOR: PDA CAMARERO (Comandero de Sala) -->
+      <div class="pda-panel console-card" id="pda-panel">
+        <div class="console-card-header pda-header">
+          <div class="panel-identity">
+            <div class="panel-icon-box purple">📱</div>
+            <div class="panel-heading">
+              <h2 class="panel-title">PDA Camarero <span class="panel-sub-tag">COMANDERO DE SALA</span></h2>
+              <p class="panel-desc">Bebidas y servicio a mesa</p>
+            </div>
+          </div>
+
+          <div class="panel-metrics">
+            <div class="metric-pill purple">
+              <span class="metric-num" id="pda-count">3</span>
+              <span class="metric-lbl">POR SERVIR</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lista de Comandas PDA -->
+        <div class="pda-tickets-grid" id="pda-tickets-container">
+          <article class="pda-ticket-card" id="ticket-pda-04">
+            <div class="pda-ticket-header">
+              <div class="pda-table-badge">MESA 04 · TERRAZA</div>
+              <div class="pda-diner-name" id="pda-diner-04">Comensal: Conectando...</div>
+            </div>
+
+            <div class="pda-drinks-list" id="pda-items-04">
+              <div class="pda-item-row" id="pda-item-rioja">
+                <div class="pda-item-main">
+                  <span class="pda-qty">1x</span>
+                  <span class="pda-icon">🍷</span>
+                  <span class="pda-label">Vino Tinto D.O. Rioja Crianza</span>
+                </div>
+                <button type="button" class="btn-pda-serve" onclick="serveItem(this, 'Vino Tinto')">
+                  <span>✓ Servir</span>
+                </button>
+              </div>
+
+              <div class="pda-item-row" id="pda-item-rueda">
+                <div class="pda-item-main">
+                  <span class="pda-qty">1x</span>
+                  <span class="pda-icon">🥂</span>
+                  <span class="pda-label">Vino Blanco D.O. Rueda Verdejo</span>
+                </div>
+                <button type="button" class="btn-pda-serve" onclick="serveItem(this, 'Vino Blanco')">
+                  <span>✓ Servir</span>
+                </button>
+              </div>
+
+              <div class="pda-item-row" id="pda-item-agua">
+                <div class="pda-item-main">
+                  <span class="pda-qty">2x</span>
+                  <span class="pda-icon">💧</span>
+                  <span class="pda-label">Agua Mineral Natural 1L</span>
+                </div>
+                <button type="button" class="btn-pda-serve" onclick="serveItem(this, 'Agua')">
+                  <span>✓ Servir</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Avisos de Cocina en el PDA (cuando KDS marca listo) -->
+            <div class="pda-kitchen-alert hidden" id="pda-kitchen-alert">
+              <div class="alert-bell">🛎️</div>
+              <div class="alert-content">
+                <strong>¡Plato de Cocina Listo!</strong>
+                <p id="pda-alert-text">Llevar Paellas a Mesa 04</p>
+              </div>
+              <button type="button" class="btn-pda-delivered" onclick="clearKitchenAlert()">
+                <span>Entregado</span>
+              </button>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Lógica Principal -->
+  <script src="index.js?v=1.0.0"></script>
+</body>
+
+</html>
