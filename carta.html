@@ -18,7 +18,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
 
   <!-- Estilos Carta Móvil -->
-  <link rel="stylesheet" href="carta.css?v=1.0.5" />
+  <link rel="stylesheet" href="carta.css?v=1.0.6" />
 
   <!-- Socket.IO Client -->
   <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
@@ -65,6 +65,51 @@
         <p id="round-badge-subtitle">¿Deseas pedir algo más? Selecciona nuevos platos o bebidas abajo.</p>
       </div>
     </div>
+
+    <!-- SEGUIMIENTO EN VIVO DE ESTADO (COCINA Y SALA) -->
+    <section class="order-live-tracker hidden" id="order-live-tracker" aria-live="polite">
+      <div class="tracker-header">
+        <div class="tracker-identity">
+          <span class="tracker-badge-icon">⏱️</span>
+          <div>
+            <h3 class="tracker-heading" id="tracker-heading-text">Estado de tu Comanda</h3>
+            <span class="tracker-round-tag" id="tracker-round-text">Ronda 1</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="tracker-rows">
+        <!-- Fila 1: Paellas y Cocina -->
+        <div class="tracker-row" id="tracker-kitchen-row">
+          <div class="tracker-row-main">
+            <span class="tracker-item-icon">🥘</span>
+            <div class="tracker-item-info">
+              <strong id="tracker-kitchen-title">Cocina · Paellas</strong>
+              <p id="tracker-kitchen-desc">Preparando en los fogones...</p>
+            </div>
+          </div>
+          <span class="tracker-status-pill cooking" id="tracker-kitchen-pill">
+            <span class="pulse-dot-small orange" id="tracker-kitchen-dot"></span>
+            <span id="tracker-kitchen-status-text">Preparando</span>
+          </span>
+        </div>
+
+        <!-- Fila 2: Bebidas y Sala -->
+        <div class="tracker-row" id="tracker-drinks-row">
+          <div class="tracker-row-main">
+            <span class="tracker-item-icon">🍷</span>
+            <div class="tracker-item-info">
+              <strong id="tracker-drinks-title">Sala · Bebidas</strong>
+              <p id="tracker-drinks-desc">Preparando en barra para mesa...</p>
+            </div>
+          </div>
+          <span class="tracker-status-pill preparing" id="tracker-drinks-pill">
+            <span class="pulse-dot-small purple" id="tracker-drinks-dot"></span>
+            <span id="tracker-drinks-status-text">Preparando</span>
+          </span>
+        </div>
+      </div>
+    </section>
 
     <!-- SECCIONES DE LA CARTA (ULTRA-MINIMALISTA) -->
     <main class="menu-sections">
@@ -225,7 +270,7 @@
     </div>
   </div>
 
-  <script src="carta.js?v=1.0.5"></script>
+  <script src="carta.js?v=1.0.6"></script>
 </body>
 
 </html>

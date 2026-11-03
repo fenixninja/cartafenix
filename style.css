@@ -258,6 +258,12 @@ body {
   color: #ffffff;
 }
 
+.header-tool-btn.sound-on {
+  background: rgba(16, 185, 129, 0.16);
+  border-color: rgba(16, 185, 129, 0.45);
+  color: #34d399;
+}
+
 /* Selector de Idioma en Cabecera */
 .header-lang-switcher {
   display: inline-flex;
@@ -448,7 +454,7 @@ body {
   height: 240px;
   background: #ffffff;
   border-radius: 18px;
-  padding: 8px;
+  padding: 6px;
   display: flex;
   align-items: center;
   justify-content: center;

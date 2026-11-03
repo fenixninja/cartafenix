@@ -63,7 +63,7 @@
       dinerLabel: 'Comensal: {name}',
       cookingStatus: 'Fuego Activo',
       readyStatus: '✓ Listo para Servir',
-      btnMarkReady: '🍽️ Marcar Listo para Servir',
+      btnMarkReady: '✓ Marcar Listo para Servir',
       btnServe: '✓ Servir',
       btnServed: '✓ Servido',
       kitchenAlertTitle: '¡Plato de Cocina Listo!',
@@ -116,7 +116,7 @@
       dinerLabel: 'Guest: {name}',
       cookingStatus: 'Cooking Active',
       readyStatus: '✓ Ready to Serve',
-      btnMarkReady: '🍽️ Mark Ready to Serve',
+      btnMarkReady: '✓ Mark Ready to Serve',
       btnServe: '✓ Serve',
       btnServed: '✓ Served',
       kitchenAlertTitle: 'Kitchen Dish Ready!',
@@ -179,6 +179,7 @@
   window.addEventListener('DOMContentLoaded', () => {
     initClock();
     initVideoBackground();
+    initAudioSystem();
     initLanguageSelectors();
     applyLanguage(currentAppLang);
     initTableTabs();
@@ -342,41 +343,69 @@
   }
 
   // ========================================================
-  // 4. CONTROL DE AUDIO
+  // 4. CONTROL DE AUDIO & SINTETIZADOR RESILIENTE
   // ========================================================
+  function initAudioSystem() {
+    const unlock = () => {
+      ensureAudioContext();
+    };
+    ['click', 'pointerdown', 'touchstart', 'keydown'].forEach((evt) => {
+      document.addEventListener(evt, unlock, { once: true, passive: true });
+    });
+  }
+
+  function ensureAudioContext() {
+    try {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume().catch(() => {});
+      }
+    } catch (_) {}
+    return audioContext;
+  }
+
   function initSoundToggle() {
     const btn = document.getElementById('btn-sound-toggle');
     const icon = document.getElementById('sound-icon');
     const label = document.getElementById('sound-label');
 
+    // Sonido ON por defecto
+    soundEnabled = true;
+    if (btn) btn.classList.add('sound-on');
+    const dict = I18N[currentAppLang] || I18N.en;
+    if (icon) icon.textContent = '🔔';
+    if (label) label.textContent = dict.soundOn;
+
     btn?.addEventListener('click', () => {
       soundEnabled = !soundEnabled;
-      const dict = I18N[currentAppLang] || I18N.en;
+      const d = I18N[currentAppLang] || I18N.en;
       if (icon) icon.textContent = soundEnabled ? '🔔' : '🔕';
-      if (label) label.textContent = soundEnabled ? dict.soundOn : dict.soundOff;
-      if (soundEnabled) playChime(880, 'triangle', 0.2);
+      if (label) label.textContent = soundEnabled ? d.soundOn : d.soundOff;
+      if (btn) btn.classList.toggle('sound-on', soundEnabled);
+      if (soundEnabled) {
+        ensureAudioContext();
+        playChime(784.0, 'triangle', 0.25, 0.28);
+      }
     });
   }
 
-  function playChime(freq = 659.25, type = 'triangle', duration = 0.3) {
+  function playChime(freq = 659.25, type = 'triangle', duration = 0.3, volume = 0.25) {
     if (!soundEnabled) return;
     try {
-      if (!audioContext) {
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      }
-      if (audioContext.state === 'suspended') {
-        audioContext.resume();
-      }
-      const osc = audioContext.createOscillator();
-      const gain = audioContext.createGain();
+      const ctx = ensureAudioContext();
+      if (!ctx) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
       osc.type = type;
-      osc.frequency.setValueAtTime(freq, audioContext.currentTime);
-      gain.gain.setValueAtTime(0.2, audioContext.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      gain.gain.setValueAtTime(volume, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
       osc.connect(gain);
-      gain.connect(audioContext.destination);
+      gain.connect(ctx.destination);
       osc.start();
-      osc.stop(audioContext.currentTime + duration);
+      osc.stop(ctx.currentTime + duration);
     } catch (_) {}
   }
 
@@ -620,7 +649,9 @@
     if (verifiedName) verifiedName.textContent = cleanName;
     if (verifiedPhone) verifiedPhone.textContent = '🔒 ' + maskPhone(rawPhone);
 
-    playChime(659.25, 'triangle', 0.5);
+    // Doble campanada alegre y nítida al detectar el escaneo y el comensal
+    playChime(659.25, 'triangle', 0.25, 0.32);
+    setTimeout(() => playChime(880.0, 'triangle', 0.45, 0.35), 140);
     renderTableOrders(RESTAURANT_CONFIG.currentTable);
   }
 
@@ -671,8 +702,8 @@
       renderTableOrders(table);
     }, 5 * 60 * 1000);
 
-    // Sonido sutil de entrada de ítem
-    playChime(784, 'sine', 0.12);
+    // Sonido nítido de campana de cocina al seleccionar productos
+    playChime(784.0, 'triangle', 0.25, 0.28);
 
     // Renderizar para actualizar la tarjeta fantasma en KDS y PDA
     renderTableOrders(table);
@@ -864,7 +895,7 @@
           .map((ticket) => {
             const dinerName = ticket.diner || activeDiner?.name || dict.guest;
             const allReady = ticket.kds.every((i) => i.status === 'ready');
-            const roundLabel = dict.ticketRoundLabel.replace(/\{round\}/g, ticket.round);
+            const roundLabel = formatRoundTag(dict.ticketRoundLabel, ticket.round);
 
             return `
               <article class="kds-ticket-card ${allReady ? 'ready' : ''}" id="kds-card-${ticket.id}">
@@ -980,7 +1011,7 @@
         pdaHtml += sortedTickets
           .map((ticket) => {
             const dinerName = ticket.diner || activeDiner?.name || dict.guest;
-            const roundLabel = dict.ticketRoundLabel.replace(/\{round\}/g, ticket.round);
+            const roundLabel = formatRoundTag(dict.ticketRoundLabel, ticket.round);
 
             return `
               <article class="pda-ticket-card" id="pda-card-${ticket.id}">
@@ -1038,6 +1069,11 @@
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   }
 
+  function formatRoundTag(template, roundNum) {
+    const num = (roundNum !== undefined && roundNum !== null && !isNaN(Number(roundNum))) ? roundNum : 1;
+    return String(template || 'TICKET #{round} · ROUND {round}').split('{round}').join(num);
+  }
+
   function escapeHtml(str) {
     return String(str || '').replace(/[&<>"']/g, (m) => ({
       '&': '&amp;',
@@ -1063,8 +1099,24 @@
       }
       const alertEl = document.getElementById(`pda-alert-${ticketId}`);
       if (alertEl) alertEl.classList.remove('hidden');
-      playChime(880, 'sine', 0.4);
+      playChime(880.0, 'triangle', 0.35, 0.3);
       renderTableOrders(tableName);
+
+      // Notificar en tiempo real a la carta móvil que la comanda está lista
+      const statusPayload = {
+        table: tableName,
+        ticketId: ticketId,
+        round: ticket.round,
+        type: 'food',
+        status: 'ready',
+        timestamp: new Date().toISOString()
+      };
+      if (whatAuthSocket && whatAuthSocket.connected) {
+        whatAuthSocket.emit('ticket_status_updated', statusPayload);
+      }
+      if (broadcast) {
+        broadcast.postMessage({ type: 'ticket_status_updated', data: statusPayload });
+      }
     }
   };
 
@@ -1074,8 +1126,26 @@
     const ticket = tickets.find((t) => t.id === ticketId);
     if (ticket && ticket.pda[itemIdx]) {
       ticket.pda[itemIdx].served = !ticket.pda[itemIdx].served;
-      playChime(523.25, 'sine', 0.15);
+      const isServed = ticket.pda[itemIdx].served;
+      playChime(523.25, 'sine', 0.18, 0.22);
       renderTableOrders(tableName);
+
+      // Notificar en tiempo real a la carta móvil que la bebida ha sido servida
+      const statusPayload = {
+        table: tableName,
+        ticketId: ticketId,
+        round: ticket.round,
+        itemName: ticket.pda[itemIdx].name,
+        type: 'drink',
+        status: isServed ? 'served' : 'preparing',
+        timestamp: new Date().toISOString()
+      };
+      if (whatAuthSocket && whatAuthSocket.connected) {
+        whatAuthSocket.emit('ticket_status_updated', statusPayload);
+      }
+      if (broadcast) {
+        broadcast.postMessage({ type: 'ticket_status_updated', data: statusPayload });
+      }
     }
   };
 

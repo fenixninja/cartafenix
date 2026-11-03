@@ -1,7 +1,7 @@
 /**
  * FNX RESTAURANT — CARTA DIGITAL MÓVIL (carta.js)
  * Conexión en tiempo real con KDS y PDA a través de WhatAuth Socket.IO
- * Soporte Multi-idioma (ES / EN) y Gestión de Rondas de Comanda
+ * Soporte Multi-idioma (ES / EN), Gestión de Rondas y Tracker de Estado en Vivo
  */
 
 (function () {
@@ -77,7 +77,19 @@
       modalDesc: 'Tu pedido ya está marchando en el KDS de cocina y las bebidas han sido asignadas al PDA del camarero.',
       modalTableTag: 'Mesa:',
       modalTimeTag: 'Tiempo Estimado:',
-      modalClose: 'Entendido'
+      modalClose: 'Entendido',
+      trackerHeading: 'Estado de tu Comanda',
+      trackerRoundTag: 'Ronda {n}',
+      trackerKitchenTitle: 'Cocina · Paellas',
+      trackerKitchenDescCooking: 'Preparando en los fogones (~18-20 min)...',
+      trackerKitchenDescReady: '¡Listo para servir! Tu paella marcha a tu mesa',
+      trackerKitchenPillCooking: 'Preparando',
+      trackerKitchenPillReady: '✓ Listo',
+      trackerDrinksTitle: 'Sala · Bebidas',
+      trackerDrinksDescPreparing: 'Preparando en barra para mesa...',
+      trackerDrinksDescServed: 'Bebidas servidas en mesa. ¡Salud!',
+      trackerDrinksPillPreparing: 'Preparando',
+      trackerDrinksPillServed: '✓ Servido'
     },
     en: {
       headerSub: 'Live Digital Menu',
@@ -126,7 +138,19 @@
       modalDesc: 'Your order is now on the kitchen KDS display and drinks have been routed to the waiter PDA.',
       modalTableTag: 'Table:',
       modalTimeTag: 'Estimated Time:',
-      modalClose: 'Got it'
+      modalClose: 'Got it',
+      trackerHeading: 'Live Order Status',
+      trackerRoundTag: 'Round {n}',
+      trackerKitchenTitle: 'Kitchen · Paellas',
+      trackerKitchenDescCooking: 'Cooking on the stoves (~18-20 min)...',
+      trackerKitchenDescReady: 'Ready to serve! Your paella is heading to your table',
+      trackerKitchenPillCooking: 'Cooking',
+      trackerKitchenPillReady: '✓ Ready',
+      trackerDrinksTitle: 'Floor · Drinks',
+      trackerDrinksDescPreparing: 'Preparing at bar for table...',
+      trackerDrinksDescServed: 'Drinks served at table. Cheers!',
+      trackerDrinksPillPreparing: 'Preparing',
+      trackerDrinksPillServed: '✓ Served'
     }
   };
 
@@ -141,6 +165,14 @@
   let socket = null;
   let audioContext = null;
 
+  // Estado del Tracker de Comanda en Vivo
+  const orderLiveState = {
+    active: false,
+    round: 1,
+    kitchenStatus: 'idle', // 'idle', 'cooking', 'ready'
+    drinksStatus: 'idle'   // 'idle', 'preparing', 'served'
+  };
+
   // ========================================================
   // INICIALIZACIÓN
   // ========================================================
@@ -148,6 +180,7 @@
     initLangSelector();
     applyLanguage(currentLang);
     initSocket();
+    initBroadcast();
     initSteppers();
     initSubmitButton();
   });
@@ -242,8 +275,9 @@
     if (modalTimeTag) modalTimeTag.textContent = dict.modalTimeTag;
     if (btnCloseModal) btnCloseModal.textContent = dict.modalClose;
 
-    // Banner de ronda (si está visible)
+    // Banner de ronda y Tracker de estado
     updateRoundBannerText();
+    renderLiveTracker();
     updateCartTotal();
   }
 
@@ -275,6 +309,76 @@
   }
 
   // ========================================================
+  // 1B. RENDERIZADO DEL TRACKER DE COMANDA EN VIVO
+  // ========================================================
+  function renderLiveTracker() {
+    const trackerEl = document.getElementById('order-live-tracker');
+    if (!trackerEl) return;
+
+    if (!orderLiveState.active) {
+      trackerEl.classList.add('hidden');
+      return;
+    }
+
+    trackerEl.classList.remove('hidden');
+
+    const dict = I18N[currentLang] || I18N.en;
+    const headingEl = document.getElementById('tracker-heading-text');
+    const roundTag = document.getElementById('tracker-round-text');
+
+    if (headingEl) headingEl.textContent = dict.trackerHeading;
+    if (roundTag) roundTag.textContent = dict.trackerRoundTag.replace('{n}', orderLiveState.round);
+
+    // 1. Cocina (Paellas)
+    const kRow = document.getElementById('tracker-kitchen-row');
+    const kTitle = document.getElementById('tracker-kitchen-title');
+    const kDesc = document.getElementById('tracker-kitchen-desc');
+    const kPill = document.getElementById('tracker-kitchen-pill');
+    const kDot = document.getElementById('tracker-kitchen-dot');
+    const kText = document.getElementById('tracker-kitchen-status-text');
+
+    if (kTitle) kTitle.textContent = dict.trackerKitchenTitle;
+
+    if (orderLiveState.kitchenStatus === 'ready') {
+      if (kRow) kRow.classList.add('ready');
+      if (kDesc) kDesc.textContent = dict.trackerKitchenDescReady;
+      if (kPill) kPill.className = 'tracker-status-pill ready';
+      if (kDot) kDot.className = 'pulse-dot-small green';
+      if (kText) kText.textContent = dict.trackerKitchenPillReady;
+    } else {
+      if (kRow) kRow.classList.remove('ready');
+      if (kDesc) kDesc.textContent = dict.trackerKitchenDescCooking;
+      if (kPill) kPill.className = 'tracker-status-pill cooking';
+      if (kDot) kDot.className = 'pulse-dot-small orange';
+      if (kText) kText.textContent = dict.trackerKitchenPillCooking;
+    }
+
+    // 2. Bebidas (Sala)
+    const dRow = document.getElementById('tracker-drinks-row');
+    const dTitle = document.getElementById('tracker-drinks-title');
+    const dDesc = document.getElementById('tracker-drinks-desc');
+    const dPill = document.getElementById('tracker-drinks-pill');
+    const dDot = document.getElementById('tracker-drinks-dot');
+    const dText = document.getElementById('tracker-drinks-status-text');
+
+    if (dTitle) dTitle.textContent = dict.trackerDrinksTitle;
+
+    if (orderLiveState.drinksStatus === 'served') {
+      if (dRow) dRow.classList.add('ready');
+      if (dDesc) dDesc.textContent = dict.trackerDrinksDescServed;
+      if (dPill) dPill.className = 'tracker-status-pill ready';
+      if (dDot) dDot.className = 'pulse-dot-small green';
+      if (dText) dText.textContent = dict.trackerDrinksPillServed;
+    } else {
+      if (dRow) dRow.classList.remove('ready');
+      if (dDesc) dDesc.textContent = dict.trackerDrinksDescPreparing;
+      if (dPill) dPill.className = 'tracker-status-pill preparing';
+      if (dDot) dDot.className = 'pulse-dot-small purple';
+      if (dText) dText.textContent = dict.trackerDrinksPillPreparing;
+    }
+  }
+
+  // ========================================================
   // 2. CONEXIÓN SOCKET.IO (SALA COMPARTIDA POR SESSIONID)
   // ========================================================
   function initSocket() {
@@ -298,9 +402,52 @@
         const dict = I18N[currentLang] || I18N.en;
         if (greetingEl) greetingEl.textContent = dict.welcomeGreetingNamed.replace('{name}', name);
       });
+
+      // Escuchar cambios de estado desde KDS (cocina) y PDA (sala)
+      socket.on('ticket_status_updated', handleTicketStatusUpdate);
     } catch (e) {
       console.warn('[Carta Móvil] Error conectando socket:', e);
     }
+  }
+
+  function initBroadcast() {
+    if (!broadcast) return;
+    broadcast.onmessage = (event) => {
+      const { type, data } = event.data || {};
+      if (type === 'ticket_status_updated') {
+        handleTicketStatusUpdate(data);
+      }
+    };
+  }
+
+  function handleTicketStatusUpdate(data) {
+    if (!data) return;
+    const targetTable = (data.table || '').toLowerCase();
+    const myTable = currentTable.toLowerCase();
+    if (targetTable && !myTable.includes(targetTable) && !targetTable.includes(myTable)) {
+      return;
+    }
+
+    orderLiveState.active = true;
+    if (data.round) {
+      orderLiveState.round = data.round;
+    }
+
+    if (data.type === 'food') {
+      orderLiveState.kitchenStatus = data.status || 'ready';
+      if (data.status === 'ready') {
+        // Chime alegre de plato listo en cocina
+        playTapSound(880, 'triangle', 0.25);
+      }
+    } else if (data.type === 'drink') {
+      orderLiveState.drinksStatus = data.status || 'served';
+      if (data.status === 'served') {
+        // Chime suave de bebida servida
+        playTapSound(587.33, 'sine', 0.15);
+      }
+    }
+
+    renderLiveTracker();
   }
 
   // ========================================================
@@ -442,12 +589,14 @@
 
       playTapSound(800, 'triangle', 0.35);
 
+      const submittedRound = currentRound;
+
       // Payload oficial de comanda
       const orderPayload = {
         table: currentTable,
         sessionId: currentSessionId,
         dinerName: currentDinerName || '',
-        round: currentRound,
+        round: submittedRound,
         items: orderItems,
         foodCount,
         drinkCount,
@@ -462,19 +611,26 @@
         broadcast.postMessage({ type: 'order_submitted', data: orderPayload });
       }
 
-      // 2. Incrementar ronda para próximos pedidos
+      // 2. Activar tracker de comanda en vivo en la carta móvil
+      orderLiveState.active = true;
+      orderLiveState.round = submittedRound;
+      orderLiveState.kitchenStatus = foodCount > 0 ? 'cooking' : 'idle';
+      orderLiveState.drinksStatus = drinkCount > 0 ? 'preparing' : 'idle';
+      renderLiveTracker();
+
+      // 3. Incrementar ronda para próximos pedidos
       currentRound++;
 
-      // 3. Resetear contadores de la carta a 0
+      // 4. Resetear contadores de la carta a 0
       resetCartCounters();
 
-      // 4. Mostrar banner de ronda activa
+      // 5. Mostrar banner de ronda activa
       if (roundBanner) {
         roundBanner.classList.remove('hidden');
         updateRoundBannerText();
       }
 
-      // 5. Mostrar modal de éxito
+      // 6. Mostrar modal de éxito
       if (modal) modal.classList.remove('hidden');
     });
 
