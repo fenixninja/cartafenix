@@ -245,7 +245,7 @@
       gain.connect(audioContext.destination);
       osc.start();
       osc.stop(audioContext.currentTime + duration);
-    } catch (_) {}
+    } catch (_) { }
   }
 
   // ========================================================
@@ -307,7 +307,7 @@
               u.searchParams.set('phone', RESTAURANT_CONFIG.phone);
             }
             walink = u.toString();
-          } catch (_) {}
+          } catch (_) { }
         }
         currentQrSession.walink = walink;
 
