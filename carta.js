@@ -334,7 +334,7 @@
           name: cart[id].name,
           category: cat,
           price,
-          qty: 1,
+          qty: cart[id].qty,
           round: currentRound,
           table: currentTable,
           sessionId: currentSessionId,
@@ -351,6 +351,19 @@
           }
           playTapSound(400);
           updateCartTotal();
+
+          // Emitir actualización de cantidad en borrador (si es 0 se retira del ghost card)
+          emitItemToDesktop({
+            id,
+            name: cart[id].name,
+            category: cat,
+            price,
+            qty: cart[id].qty,
+            round: currentRound,
+            table: currentTable,
+            sessionId: currentSessionId,
+            dinerName: currentDinerName || ''
+          });
         }
       });
     });

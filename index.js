@@ -68,7 +68,14 @@
       btnServed: '✓ Servido',
       kitchenAlertTitle: '¡Plato de Cocina Listo!',
       kitchenAlertText: 'Llevar Paellas a {table}',
-      btnDelivered: 'Entregado'
+      btnDelivered: 'Entregado',
+      ghostBadge: 'BORRADOR EN VIVO',
+      ghostStatusDrafting: 'Eligiendo en móvil',
+      ghostItemNote: 'Añadido en carta móvil · Sin confirmar',
+      ghostStatusPill: 'En Borrador',
+      ghostNotice: 'Comensal seleccionando en su móvil · Se descarta en 5 min si no se envía',
+      ghostPendingBtn: '⏳ En elección...',
+      guest: 'Comensal'
     },
     en: {
       brandTagline: 'Smart Table · KDS & PDA Live System',
@@ -114,7 +121,14 @@
       btnServed: '✓ Served',
       kitchenAlertTitle: 'Kitchen Dish Ready!',
       kitchenAlertText: 'Deliver Paellas to {table}',
-      btnDelivered: 'Delivered'
+      btnDelivered: 'Delivered',
+      ghostBadge: 'LIVE DRAFT',
+      ghostStatusDrafting: 'Selecting on mobile',
+      ghostItemNote: 'Added on mobile menu · Unconfirmed',
+      ghostStatusPill: 'In Draft',
+      ghostNotice: 'Guest selecting on mobile · Discards in 5 min if not submitted',
+      ghostPendingBtn: '⏳ In selection...',
+      guest: 'Guest'
     }
   };
 
@@ -618,48 +632,50 @@
   }
 
   // ========================================================
-  // 9. ESTADO ENTRANDO (BORRADOR EN TIEMPO REAL ANTES DE ENVIAR)
+  // 9. ESTADO ENTRANDO (TARJETA FANTASMA PROVISIONAL)
   // ========================================================
   function handleIncomingOrderItem(itemData) {
     if (!itemData || !itemData.name) return;
     const table = normalizeTableName(itemData.table || RESTAURANT_CONFIG.currentTable);
     const dict = I18N[currentAppLang] || I18N.en;
 
-    // Solo activamos banner si la mesa coincide con la activa en pantalla
-    if (table === RESTAURANT_CONFIG.currentTable) {
-      const isFood = itemData.category === 'paellas' || itemData.name.toLowerCase().includes('paella');
-      const kdsDraftBar = document.getElementById('kds-draft-bar');
-      const kdsDraftText = document.getElementById('kds-draft-text');
-      const pdaDraftBar = document.getElementById('pda-draft-bar');
-      const pdaDraftText = document.getElementById('pda-draft-text');
-
-      if (isFood) {
-        if (kdsDraftBar && kdsDraftText) {
-          kdsDraftText.textContent = dict.draftTitleKds
-            .replace('{table}', table.toUpperCase())
-            .replace('{item}', itemData.name);
-          kdsDraftBar.classList.remove('hidden');
-          clearTimeout(draftTimeoutKds);
-          draftTimeoutKds = setTimeout(() => {
-            kdsDraftBar.classList.add('hidden');
-          }, 8000);
-        }
-      } else {
-        if (pdaDraftBar && pdaDraftText) {
-          pdaDraftText.textContent = dict.draftTitlePda
-            .replace('{table}', table.toUpperCase())
-            .replace('{item}', itemData.name);
-          pdaDraftBar.classList.remove('hidden');
-          clearTimeout(draftTimeoutPda);
-          draftTimeoutPda = setTimeout(() => {
-            pdaDraftBar.classList.add('hidden');
-          }, 8000);
-        }
-      }
+    // Actualizar estado en borrador (Ghost Card)
+    if (!tableDrafts[table]) {
+      tableDrafts[table] = {
+        diner: itemData.dinerName || activeDiner?.name || dict.guest,
+        items: {},
+        timeoutId: null
+      };
     }
+    const tDraft = tableDrafts[table];
+    if (itemData.dinerName) tDraft.diner = itemData.dinerName;
+
+    const qty = typeof itemData.qty === 'number' ? itemData.qty : 1;
+    if (qty > 0) {
+      tDraft.items[itemData.id] = {
+        id: itemData.id,
+        name: itemData.name,
+        category: itemData.category,
+        price: itemData.price,
+        qty: qty
+      };
+    } else {
+      delete tDraft.items[itemData.id];
+    }
+
+    // Reiniciar temporizador de 5 minutos (auto-descarte si no se confirma la comanda)
+    if (tDraft.timeoutId) clearTimeout(tDraft.timeoutId);
+    tDraft.timeoutId = setTimeout(() => {
+      console.log(`[Ghost Card] 5 minutos de inactividad en ${table}: descartando tarjeta fantasma provisional`);
+      delete tableDrafts[table];
+      renderTableOrders(table);
+    }, 5 * 60 * 1000);
 
     // Sonido sutil de entrada de ítem
     playChime(784, 'sine', 0.12);
+
+    // Renderizar para actualizar la tarjeta fantasma en KDS y PDA
+    renderTableOrders(table);
   }
 
   // ========================================================
@@ -669,13 +685,11 @@
     if (!orderData) return;
     const table = normalizeTableName(orderData.table || RESTAURANT_CONFIG.currentTable);
 
-    // 1. Ocultar de inmediato las barras de borrador
-    const kdsDraftBar = document.getElementById('kds-draft-bar');
-    const pdaDraftBar = document.getElementById('pda-draft-bar');
-    if (kdsDraftBar) kdsDraftBar.classList.add('hidden');
-    if (pdaDraftBar) pdaDraftBar.classList.add('hidden');
-    clearTimeout(draftTimeoutKds);
-    clearTimeout(draftTimeoutPda);
+    // 1. Limpiar borrador y cancelar el temporizador de 5 minutos al confirmarse la comanda
+    if (tableDrafts[table]) {
+      if (tableDrafts[table].timeoutId) clearTimeout(tableDrafts[table].timeoutId);
+      delete tableDrafts[table];
+    }
 
     if (!liveTableTickets[table]) {
       liveTableTickets[table] = [];
@@ -716,7 +730,7 @@
       });
     }
 
-    // Crear la nueva tarjeta de Ticket
+    // Crear la nueva tarjeta de Ticket oficial
     const newTicket = {
       id: 'ticket_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
       round: roundNumber,
@@ -746,7 +760,7 @@
     playChime(784.0, 'triangle', 0.2);
     setTimeout(() => playChime(1046.5, 'triangle', 0.35), 180);
 
-    // Renderizar KDS y PDA
+    // Renderizar KDS y PDA (el nuevo aparecerá arriba)
     renderTableOrders(table);
   }
 
@@ -765,11 +779,18 @@
     if (table !== RESTAURANT_CONFIG.currentTable) return;
 
     const ticketsList = liveTableTickets[table] || [];
+    const tDraft = tableDrafts[table];
     const kdsContainer = document.getElementById('kds-tickets-container');
     const pdaContainer = document.getElementById('pda-tickets-container');
     const kdsCountEl = document.getElementById('kds-count');
     const pdaCountEl = document.getElementById('pda-count');
     const dict = I18N[currentAppLang] || I18N.en;
+
+    // Platos y bebidas en borrador (Ghost Card)
+    const draftItems = tDraft ? Object.values(tDraft.items) : [];
+    const draftFood = draftItems.filter((i) => i.category === 'paellas' || i.name.toLowerCase().includes('paella'));
+    const draftDrinks = draftItems.filter((i) => i.category !== 'paellas' && !i.name.toLowerCase().includes('paella'));
+    const draftDiner = tDraft?.diner || activeDiner?.name || dict.guest;
 
     // 1. KDS COCINA
     let totalFoodCount = 0;
@@ -779,7 +800,7 @@
     });
     if (kdsCountEl) kdsCountEl.textContent = totalFoodCount;
 
-    if (ticketsWithFood.length === 0) {
+    if (ticketsWithFood.length === 0 && draftFood.length === 0) {
       if (kdsContainer) {
         kdsContainer.innerHTML = `
           <div class="kds-empty-placeholder" id="kds-empty-placeholder">
@@ -791,17 +812,66 @@
       }
     } else {
       if (kdsContainer) {
-        kdsContainer.innerHTML = ticketsWithFood
+        let kdsHtml = '';
+
+        // Si hay platos en borrador, prepender la TARJETA FANTASMA arriba del todo
+        if (draftFood.length > 0) {
+          kdsHtml += `
+            <article class="kds-ticket-card ghost-card" id="kds-ghost-card">
+              <div class="ticket-header">
+                <div class="ticket-table-tag">
+                  <span class="badge-table">${table.toUpperCase()}</span>
+                  <span class="badge-ghost">⚡ ${dict.ghostBadge}</span>
+                  <span class="ticket-diner">${escapeHtml(draftDiner)}</span>
+                </div>
+                <div class="ticket-timer-badge ghost">
+                  <span class="ghost-pulse-dot"></span>
+                  <span class="ghost-status-lbl">${dict.ghostStatusDrafting}</span>
+                </div>
+              </div>
+
+              <div class="ticket-body">
+                <ul class="ticket-items-list">
+                  ${draftFood
+                    .map(
+                      (item) => `
+                    <li class="ticket-item ghost-item">
+                      <span class="item-qty">${item.qty}x</span>
+                      <div class="item-info">
+                        <span class="item-name">${escapeHtml(item.name)}</span>
+                        <span class="item-note">${escapeHtml(dict.ghostItemNote)}</span>
+                      </div>
+                      <span class="item-status-pill ghost">${dict.ghostStatusPill}</span>
+                    </li>
+                  `
+                    )
+                    .join('')}
+                </ul>
+              </div>
+
+              <div class="ticket-footer">
+                <div class="ghost-card-notice">
+                  <span>⏳ ${dict.ghostNotice}</span>
+                </div>
+              </div>
+            </article>
+          `;
+        }
+
+        // Renderizar los tickets confirmados en orden INVERSO (el último arriba)
+        const sortedTickets = [...ticketsWithFood].reverse();
+        kdsHtml += sortedTickets
           .map((ticket) => {
-            const dinerName = ticket.diner || activeDiner?.name || 'Comensal';
+            const dinerName = ticket.diner || activeDiner?.name || dict.guest;
             const allReady = ticket.kds.every((i) => i.status === 'ready');
+            const roundLabel = dict.ticketRoundLabel.replace(/\{round\}/g, ticket.round);
 
             return `
               <article class="kds-ticket-card ${allReady ? 'ready' : ''}" id="kds-card-${ticket.id}">
                 <div class="ticket-header">
                   <div class="ticket-table-tag">
                     <span class="badge-table">${table.toUpperCase()}</span>
-                    <span class="badge-round">${dict.ticketRoundLabel.replace('{round}', ticket.round)}</span>
+                    <span class="badge-round">${roundLabel}</span>
                     <span class="ticket-diner">${escapeHtml(dinerName)}</span>
                   </div>
                   <div class="ticket-timer-badge">
@@ -840,6 +910,8 @@
             `;
           })
           .join('');
+
+        kdsContainer.innerHTML = kdsHtml;
       }
     }
 
@@ -853,7 +925,7 @@
     });
     if (pdaCountEl) pdaCountEl.textContent = totalDrinkCount;
 
-    if (ticketsWithDrinks.length === 0) {
+    if (ticketsWithDrinks.length === 0 && draftDrinks.length === 0) {
       if (pdaContainer) {
         pdaContainer.innerHTML = `
           <div class="pda-empty-placeholder" id="pda-empty-placeholder">
@@ -865,16 +937,57 @@
       }
     } else {
       if (pdaContainer) {
-        pdaContainer.innerHTML = ticketsWithDrinks
+        let pdaHtml = '';
+
+        // Si hay bebidas en borrador, prepender la TARJETA FANTASMA arriba del todo
+        if (draftDrinks.length > 0) {
+          pdaHtml += `
+            <article class="pda-ticket-card ghost-card" id="pda-ghost-card">
+              <div class="pda-ticket-header">
+                <div>
+                  <span class="pda-table-badge">${table.toUpperCase()} · ${RESTAURANT_CONFIG.currentZone.toUpperCase()}</span>
+                  <span class="badge-ghost" style="margin-left: 6px;">⚡ ${dict.ghostBadge}</span>
+                </div>
+                <div class="pda-diner-name">${escapeHtml(draftDiner)}</div>
+              </div>
+
+              <div class="pda-drinks-list">
+                ${draftDrinks
+                  .map(
+                    (item) => `
+                  <div class="pda-item-row ghost-item">
+                    <div class="pda-item-main">
+                      <span class="pda-qty">${item.qty}x</span>
+                      <span class="pda-icon">${item.name.toLowerCase().includes('rioja') ? '🍷' : (item.name.toLowerCase().includes('rueda') ? '🥂' : '💧')}</span>
+                      <span class="pda-label">${escapeHtml(item.name)}</span>
+                    </div>
+                    <span class="btn-pda-serve ghost-btn">${dict.ghostPendingBtn}</span>
+                  </div>
+                `
+                  )
+                  .join('')}
+              </div>
+
+              <div class="ghost-card-notice">
+                <span>⏳ ${dict.ghostNotice}</span>
+              </div>
+            </article>
+          `;
+        }
+
+        // Renderizar los tickets confirmados en orden INVERSO (el último arriba)
+        const sortedTickets = [...ticketsWithDrinks].reverse();
+        pdaHtml += sortedTickets
           .map((ticket) => {
-            const dinerName = ticket.diner || activeDiner?.name || 'Comensal';
+            const dinerName = ticket.diner || activeDiner?.name || dict.guest;
+            const roundLabel = dict.ticketRoundLabel.replace(/\{round\}/g, ticket.round);
 
             return `
               <article class="pda-ticket-card" id="pda-card-${ticket.id}">
                 <div class="pda-ticket-header">
                   <div>
                     <span class="pda-table-badge">${table.toUpperCase()} · ${RESTAURANT_CONFIG.currentZone.toUpperCase()}</span>
-                    <span class="badge-round" style="margin-left: 6px;">${dict.ticketRoundLabel.replace('{round}', ticket.round)}</span>
+                    <span class="badge-round" style="margin-left: 6px;">${roundLabel}</span>
                   </div>
                   <div class="pda-diner-name">${escapeHtml(dinerName)}</div>
                 </div>
@@ -903,7 +1016,7 @@
                   <div class="alert-bell">🛎️</div>
                   <div class="alert-content">
                     <strong>${dict.kitchenAlertTitle}</strong>
-                    <p>${dict.kitchenAlertText.replace('{table}', table)} (${dict.ticketRoundLabel.replace('{round}', ticket.round)})</p>
+                    <p>${dict.kitchenAlertText.replace('{table}', table)} (${roundLabel})</p>
                   </div>
                   <button type="button" class="btn-pda-delivered" onclick="window.clearTicketKitchenAlert('${ticket.id}')">
                     <span>${dict.btnDelivered}</span>
@@ -913,6 +1026,8 @@
             `;
           })
           .join('');
+
+        pdaContainer.innerHTML = pdaHtml;
       }
     }
   }

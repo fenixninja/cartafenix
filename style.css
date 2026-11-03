@@ -1061,6 +1061,120 @@ body {
   background: rgba(18, 42, 35, 0.85);
 }
 
+/* ========================================================
+   TARJETAS FANTASMA PROVISIONALES (BORRADOR EN KDS / PDA)
+   ======================================================== */
+.kds-ticket-card.ghost-card,
+.pda-ticket-card.ghost-card {
+  background: rgba(22, 29, 49, 0.62) !important;
+  border-style: dashed !important;
+  border-width: 1.5px !important;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.kds-ticket-card.ghost-card {
+  border-color: rgba(255, 122, 0, 0.7) !important;
+  box-shadow: 0 0 25px rgba(255, 122, 0, 0.16) !important;
+  animation: ghostPulseOrange 3.5s infinite ease-in-out;
+}
+
+.pda-ticket-card.ghost-card {
+  border-color: rgba(224, 86, 253, 0.7) !important;
+  box-shadow: 0 0 25px rgba(155, 81, 224, 0.16) !important;
+  animation: ghostPulsePurple 3.5s infinite ease-in-out;
+}
+
+.badge-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(255, 122, 0, 0.18);
+  color: #ffaa5b;
+  border: 1px dashed rgba(255, 122, 0, 0.55);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pda-ticket-card .badge-ghost {
+  background: rgba(155, 81, 224, 0.18);
+  color: #e0a6ff;
+  border-color: rgba(224, 86, 253, 0.55);
+}
+
+.ticket-timer-badge.ghost {
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.ghost-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #FF7A00;
+  box-shadow: 0 0 8px #FF7A00;
+  animation: draftPulse 1.2s infinite ease-in-out;
+}
+
+.pda-ticket-card .ghost-pulse-dot {
+  background: #E056FD;
+  box-shadow: 0 0 8px #E056FD;
+}
+
+.ghost-status-lbl {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.item-status-pill.ghost {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+}
+
+.ghost-card-notice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px dashed rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.35;
+}
+
+.btn-pda-serve.ghost-btn {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  cursor: not-allowed;
+  pointer-events: none;
+  font-size: 0.72rem;
+  padding: 5px 10px;
+}
+
+@keyframes ghostPulseOrange {
+  0%, 100% { border-color: rgba(255, 122, 0, 0.45); }
+  50% { border-color: rgba(255, 122, 0, 0.85); box-shadow: 0 0 28px rgba(255, 122, 0, 0.28); }
+}
+
+@keyframes ghostPulsePurple {
+  0%, 100% { border-color: rgba(224, 86, 253, 0.45); }
+  50% { border-color: rgba(224, 86, 253, 0.85); box-shadow: 0 0 28px rgba(224, 86, 253, 0.28); }
+}
+
 .ticket-header {
   display: flex;
   align-items: center;
